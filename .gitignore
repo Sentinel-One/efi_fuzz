@@ -1,0 +1,5 @@
+*.pickle
+*.bin
+afl_inputs/
+afl_outputs/
+__pycache__/

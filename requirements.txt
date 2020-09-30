@@ -1,0 +1,4 @@
+pefile
+qiling
+uefi_firmware
+monkeyhex

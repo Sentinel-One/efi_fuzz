@@ -1,0 +1,16 @@
+[Defines]
+  INF_VERSION = 0x00010005
+  BASE_NAME   = NotMyUefiFault
+  FILE_GUID   = c508f04b-ec67-4057-a8c2-9645bd738eb6
+  MODULE_TYPE = UEFI_DRIVER
+  ENTRY_POINT = _ModuleEntryPoint
+
+[Sources]
+  NotMyUefiFault.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+
+[LibraryClasses]
+  UefiLib
+  
