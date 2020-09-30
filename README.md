@@ -1,6 +1,7 @@
 # efi_fuzz
 A simple, coverage-guided fuzzer for UEFI NVRAM variables.
-Based on [Qiling](https://github.com/qilingframework/qiling) and [AFL++](https://github.com/AFLplusplus/AFLplusplus).
+Based on [Qiling](https://github.com/qilingframework/qiling) and [AFL++](https://github.com/AFLplusplus/AFLplusplus).\
+Written by Itai Liba ([@liba2k](https://twitter.com/liba2k)) and Assaf Carlsbad ([@assaf_carlsbad](https://twitter.com/assaf_carlsbad)).
 
 ## Usage
 1. If running on Windows, install WSL. We recommend WSL2 as opposed to the original WSL, which tends to be slow sometimes. The full installation instructions for Windows 10 can be found here: https://docs.microsoft.com/en-us/windows/wsl/install-win10
