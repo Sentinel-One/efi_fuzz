@@ -46,11 +46,11 @@ def enable_sanitized_heap(ql, fault_rate=0):
 
         verbose_abort(ql)
 
-    ql.loader.heap = QlSanitizedMemoryHeap(ql, ql.loader.heap, fault_rate=fault_rate)
-    ql.loader.heap.oob_handler = oob_handler
-    ql.loader.heap.bo_handler = bo_handler
-    ql.loader.heap.bad_free_handler = bad_free_handler
-    ql.loader.heap.uaf_handler = uaf_handler
+    ql.os.heap = QlSanitizedMemoryHeap(ql, ql.os.heap, fault_rate=fault_rate)
+    ql.os.heap.oob_handler = oob_handler
+    ql.os.heap.bo_handler = bo_handler
+    ql.os.heap.bad_free_handler = bad_free_handler
+    ql.os.heap.uaf_handler = uaf_handler
 
 def enable_sanitized_CopyMem(ql):
     """
@@ -70,7 +70,7 @@ def enable_sanitized_CopyMem(ql):
         pop rsi
         """
     runcode = ql.compile(ql.archtype, code)
-    ptr = ql.loader.heap.alloc(len(runcode))
+    ptr = ql.os.heap.alloc(len(runcode))
     ql.mem.write(ptr, runcode)
 
     def my_CopyMem(ql, address, params):
@@ -95,7 +95,7 @@ def enable_sanitized_SetMem(ql):
         pop rdi
         """
     runcode = ql.compile(ql.archtype, code)
-    ptr = ql.loader.heap.alloc(len(runcode))
+    ptr = ql.os.heap.alloc(len(runcode))
     ql.mem.write(ptr, runcode)
 
     def my_SetMem(ql, address, params):
