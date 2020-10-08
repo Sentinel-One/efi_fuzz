@@ -65,7 +65,7 @@ def start_afl(_ql: Qiling, user_data):
         """
         Informs AFL that a certain condition should be treated as a crash.
         """
-        if sanitize and not _ql.loader.heap.validate():
+        if sanitize and not _ql.os.heap.validate():
             # Canary was corrupted.
             verbose_abort(_ql)
             return True
