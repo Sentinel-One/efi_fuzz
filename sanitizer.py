@@ -1,7 +1,8 @@
 import os
 
-from qiling.const import D_INFO
+from qiling.const import *
 from qiling.extensions.sanitizers.heap import QlSanitizedMemoryHeap
+
 
 def verbose_abort(ql):
     ql.os.emu_error()
