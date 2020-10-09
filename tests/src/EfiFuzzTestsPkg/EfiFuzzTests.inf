@@ -1,0 +1,16 @@
+[Defines]
+  INF_VERSION = 0x00010005
+  BASE_NAME   = UninitializedMemoryTrackerTest
+  FILE_GUID   = 6d48cf7b-30ee-4d64-9228-c0cae1b980a6
+  MODULE_TYPE = UEFI_DRIVER
+  ENTRY_POINT = _ModuleEntryPoint
+
+[Sources]
+  UninitializedMemoryTrackerTest.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+
+[LibraryClasses]
+  UefiLib
+  
