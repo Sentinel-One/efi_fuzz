@@ -1,6 +1,6 @@
 # efi_fuzz tests
 
-# Running
+## Running
 1. Make sure `pytest` and `mockito` are installed: `pip3 install -U pytest mockito`
 2. Run the tests: `cd tests; pytest -s -v`
 
