@@ -43,4 +43,5 @@ Written by Itai Liba ([@liba2k](https://twitter.com/liba2k)) and Assaf Carlsbad 
 * `-t, --timeout`: Specify a new timeout value for the emulation, in ms.
 * `-o, --output`: Specify output format for debugging purposes. Valid values are: `trace`, `disasm`, `debug` and `off` (defaults to `off`).
 * `-n, --no-sanitize`: Disable the memory sanitizer (defaults to `False`).
+* `-u, --track-uninitialized`: Keeps track of uninitialized memory via Triton and taint propagation (EXPERIMENTAL!). 
 * `-x, --extra-modules`: A list of extra modules to load to satisfy the dependencies of the target. 
