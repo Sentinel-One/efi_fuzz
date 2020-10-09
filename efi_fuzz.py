@@ -40,6 +40,7 @@ except ImportError:
 from qiling import Qiling
 from unicorn import *
 from sanitizer import *
+from taint.tracker import enable_uninitialized_memory_tracker
 
 # for argparse
 def auto_int(x):
@@ -87,7 +88,7 @@ def start_afl(_ql: Qiling, user_data):
         if ex != unicornafl.UC_AFL_RET_CALLED_TWICE:
             raise
 
-def main(target_binary, nvram_file, var_name, input_file, output, end, timeout, sanitize, extra_modules):
+def main(target_binary, nvram_file, var_name, input_file, output, end, timeout, sanitize, track_uninitialized, extra_modules):
     enable_trace = output != 'off'
 
     # Listify extra modules.
@@ -118,6 +119,9 @@ def main(target_binary, nvram_file, var_name, input_file, output, end, timeout, 
         enable_sanitized_CopyMem(ql)
         enable_sanitized_SetMem(ql)
 
+    if track_uninitialized:
+        enable_uninitialized_memory_tracker(ql)
+
     # okay, ready to roll.
     try:
         ql.run(end=end, timeout=timeout)
@@ -142,9 +146,10 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--timeout", help="Emulation timeout in ms", type=int, default=60*100000)
     parser.add_argument("-o", "--output", help="Trace execution for debugging purposes", choices=['trace', 'disasm', 'debug', 'off'], default='off')
     parser.add_argument("-n", "--no-sanitize", help="Disable memory sanitizer", action='store_true', default=False)
+    parser.add_argument("-u", "--track-uninitialized", help="Track uninitialized memory (experimental!)", action='store_true', default=False)
     parser.add_argument("-x", "--extra-modules", help="Extra modules to load", nargs='+')
 
     args = parser.parse_args()
 
     sanitize = not args.no_sanitize
-    main(args.target, args.nvram, args.varname, args.infile, args.output, args.end, args.timeout, sanitize, args.extra_modules)
+    main(args.target, args.nvram, args.varname, args.infile, args.output, args.end, args.timeout, sanitize, args.track_uninitialized, args.extra_modules)
