@@ -1,4 +1,6 @@
+#ifdef _MSC_VER
 #pragma optimize("", off)
+#endif
 
 EFI_GUID DummyGuid =   {0x8BE4DF61, 0x93CA, 0x11d2, {0xAA, 0x0D, 0x00, 0xE0, 0x98, 0x03, 0xAA, 0xBB }};
 
@@ -59,12 +61,13 @@ _ModuleEntryPoint (
     UINT32 Attributes = 0;
     UINT8 * Buffer = NULL;
     UINTN BufferSize = 8;
+    VOID * MaybeNull = NULL;
     EFI_STATUS status = EFI_SUCCESS;
     
     // Allocate the vulnerable pool buffer.
     status = SystemTable->BootServices->AllocatePool(EfiLoaderData,
                                                      BufferSize,
-                                                     &Buffer);
+                                                     (VOID **)&Buffer);
     if (EFI_ERROR(status)) {
         goto Exit;
     }
@@ -138,12 +141,11 @@ _ModuleEntryPoint (
         break;
 
     case NULL_DEREFERENCE_NON_DETERMINISTIC:
-        UINT8 * MaybeNull = NULL;
         SystemTable->BootServices->AllocatePool(EfiLoaderData,
                                                 BufferSize,
                                                 &MaybeNull);
         // We're not checking for the return value from AllocatePool()
-        *MaybeNull = 0xAA;
+        *(UINT8 *)MaybeNull = 0xAA;
         SystemTable->BootServices->FreePool(MaybeNull);
         break;
         
