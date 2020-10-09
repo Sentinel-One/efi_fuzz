@@ -35,7 +35,9 @@ typedef enum _FAULT_TYPE_T
     // Allocates a buffer with BS->AllocatePool(), then uses it without checking for NULL first
     NULL_DEREFERENCE_NON_DETERMINISTIC = 14,
     // Stack-based buffer overflow
-    STACK_BUFFER_OVERFLOW = 15
+    STACK_BUFFER_OVERFLOW = 15,
+    // Leak uninitialized stack memory
+    STACK_UNINITIALIZED_MEMORY_LEAK = 16
 } FAULT_TYPE_T;
 
 // A hand-rolled implementation for memset()
@@ -48,6 +50,38 @@ VOID MySetMem(IN VOID *Buffer, IN UINTN Size, IN UINT8 Value)
     }
 }
 
+EFI_STATUS UninitializedStackMemoryLeak(IN EFI_SYSTEM_TABLE  *SystemTable)
+{
+    UINT8 VariableData[32]; // Uninitialized
+    UINTN VariableDataSize = sizeof(VariableData);
+    UINT32 Attributes = 0;
+    EFI_STATUS status = EFI_SUCCESS;
+    
+    // Read the variable to stack memory.
+    // We'll re-use 'FaultType' for this purpose.
+    status = SystemTable->RuntimeServices->GetVariable(L"FaultType",
+                                                       &DummyGuid,
+                                                       &Attributes,
+                                                       &VariableDataSize,
+                                                       VariableData);
+    if (EFI_ERROR(status)) {
+        goto Exit;
+    }
+    
+    // Write it back to NVRAM.
+    // The bug is that we're using the original maximum size and not the actual size.
+    status = SystemTable->RuntimeServices->SetVariable(L"FaultType",
+                                                       &DummyGuid,
+                                                       Attributes,
+                                                       sizeof(VariableData),
+                                                       VariableData);
+    if (EFI_ERROR(status)) {
+        goto Exit;
+    }
+    
+Exit:
+    return status;
+}
 
 EFI_STATUS
 EFIAPI
@@ -151,6 +185,10 @@ _ModuleEntryPoint (
         
     case STACK_BUFFER_OVERFLOW:
         SystemTable->BootServices->SetMem(&Buffer, 0x100, 0xAA);
+        break;
+        
+    case STACK_UNINITIALIZED_MEMORY_LEAK:
+        status = UninitializedStackMemoryLeak(SystemTable);
         break;
 
     default:
