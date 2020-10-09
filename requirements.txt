@@ -2,3 +2,5 @@ pefile
 qiling
 uefi_firmware
 monkeyhex
+pytest
+mockito
