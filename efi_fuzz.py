@@ -31,6 +31,7 @@ import pickle
 import pefile
 import argparse
 import os
+import functools
 
 try:
     import monkeyhex
@@ -43,8 +44,7 @@ from sanitizer import *
 from taint.tracker import enable_uninitialized_memory_tracker
 
 # for argparse
-def auto_int(x):
-    return int(x, 0)
+auto_int = functools.partial(int, base=0)
 
 def start_afl(_ql: Qiling, user_data):
     """
