@@ -42,14 +42,19 @@ def main(rom_filename, corpus_directory):
                                 # Invalid variable.
                                 continue
 
-                            if not os.path.isdir(var.name):
-                                os.mkdir(var.name)
+                            if type(var.name) == bytes:
+                                vname = var.name.decode('ascii')
+                            else:
+                                vname = var.name
 
-                            seeds = os.listdir(var.name)
+                            if not os.path.isdir(vname):
+                                os.mkdir(vname)
+
+                            seeds = os.listdir(vname)
                             no = len(seeds)
 
-                            with chdir(var.name):
-                                fname = var.name + f'_{no}'
+                            with chdir(vname):
+                                fname = vname + f'_{no}'
                                 var_data = var.data[var.data_offset:]
                                 open(fname, 'wb').write(var_data)
 
@@ -57,7 +62,7 @@ def main(rom_filename, corpus_directory):
                                 if duplicate:
                                     os.remove(fname)
                                 else:
-                                    print(f'[*] Wrote {var.name}/{fname}')
+                                    print(f'[*] Wrote {vname}/{fname}')
     print('[!] Done!')
 
 if __name__ == '__main__':
