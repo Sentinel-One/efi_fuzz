@@ -5,15 +5,15 @@ Written by Itai Liba ([@liba2k](https://twitter.com/liba2k)) and Assaf Carlsbad 
 
 ## Usage
 
-### Using Docker enviourment
+### Using Docker environment
 
 1. Build image:\
 `docker build -t efi_fuzz .`
 
-2. Test enviourment:\
+2. Test environment:\
 `docker run -v $PWD:/efi_fuzz -it efi_fuzz sh -c "cd efi_fuzz/tests/ && pytest -s -v -W ignore::DeprecationWarning"`
 
-3. Use the enviourment:\
+3. Use the environment:\
 `docker run -v $PWD:/efi_fuzz -it efi_fuzz sh -c "cd /efi_fuzz ; bash"`
 
 4. Prepare the emulated NVRAM environment (You will have to provide the rom image): \
@@ -28,7 +28,7 @@ Written by Itai Liba ([@liba2k](https://twitter.com/liba2k)) and Assaf Carlsbad 
 7. If successful, move on to full-fledged fuzzing: \
 `afl-fuzz -i afl_inputs/<varname> -o afl_outputs/ -U -- python3 efi_fuzz.py <target> <nvram> <varname> @@`
 
-### Install Enviotrment locally
+### Install Environment locally
 1. If running on Windows, install WSL. We recommend WSL2 as opposed to the original WSL, which tends to be slow sometimes. The full installation instructions for Windows 10 can be found here: https://docs.microsoft.com/en-us/windows/wsl/install-win10
 
 2. Inside the WSL distribution, install some necessary packages that will allow us to compile C source code:\

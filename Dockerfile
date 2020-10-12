@@ -1,6 +1,6 @@
 FROM ubuntu:20.04
 
-# Enviourment needed to install cmake.
+# Environment needed to install cmake.
 ENV TZ=US/Pacific
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
@@ -26,7 +26,6 @@ RUN git clone https://github.com/AFLplusplus/AFLplusplus.git && cd AFLplusplus/ 
     && cd unicorn_mode && ./build_unicorn_support.sh && cd .. && make install && cd /
 
 RUN wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py
-RUN pip3 install -U qiling pytest mockito
 
 COPY requirements.txt efi_fuzz_requirements.txt
 RUN pip3 install -r efi_fuzz_requirements.txt
