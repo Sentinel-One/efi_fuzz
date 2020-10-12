@@ -4,6 +4,31 @@ Based on [Qiling](https://github.com/qilingframework/qiling) and [AFL++](https:/
 Written by Itai Liba ([@liba2k](https://twitter.com/liba2k)) and Assaf Carlsbad ([@assaf_carlsbad](https://twitter.com/assaf_carlsbad)).
 
 ## Usage
+
+### Using Docker environment
+
+1. Build image:\
+`docker build -t efi_fuzz .`
+
+2. Test environment:\
+`docker run -v $PWD:/efi_fuzz -it efi_fuzz sh -c "cd efi_fuzz/tests/ && pytest -s -v -W ignore::DeprecationWarning"`
+
+3. Use the environment:\
+`docker run -v $PWD:/efi_fuzz -it efi_fuzz sh -c "cd /efi_fuzz ; bash"`
+
+4. Prepare the emulated NVRAM environment (You will have to provide the rom image): \
+`python3 scripts/prepare_nvram.py rom.bin nvram.pickle`
+
+5. Prepare the initial corpus for the NVRAM variables: \
+`python3 scripts/prepare_afl_corpus.py rom.bin afl_inputs`
+
+6. Perform a dry run of the fuzzer: \
+`python3 efi_fuzz.py <target> <nvram> <varname> <seed>`
+
+7. If successful, move on to full-fledged fuzzing: \
+`afl-fuzz -i afl_inputs/<varname> -o afl_outputs/ -U -- python3 efi_fuzz.py <target> <nvram> <varname> @@`
+
+### Install Environment locally
 1. If running on Windows, install WSL. We recommend WSL2 as opposed to the original WSL, which tends to be slow sometimes. The full installation instructions for Windows 10 can be found here: https://docs.microsoft.com/en-us/windows/wsl/install-win10
 
 2. Inside the WSL distribution, install some necessary packages that will allow us to compile C source code:\
@@ -27,7 +52,7 @@ Written by Itai Liba ([@liba2k](https://twitter.com/liba2k)) and Assaf Carlsbad 
 `pip install -r efi_fuzz/requirements.txt`
 
 6. Prepare the emulated NVRAM environment: \
-`python scripts/prepare_nvram.py ron.bin nvram.pickle`
+`python scripts/prepare_nvram.py rom.bin nvram.pickle`
 
 7. Prepare the initial corpus for the NVRAM variables: \
 `python scripts/prepare_afl_corpus.py rom.bin afl_inputs`

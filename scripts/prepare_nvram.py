@@ -24,14 +24,18 @@ def main(rom_file, nvram_file):
                             if not var.name:
                                 # Invalid variable.
                                 continue
+                            if type(var.name) == bytes:
+                                vname = var.name.decode('ascii')
+                            else:
+                                vname = var.name
 
-                            if nvram_dict.get(var.name):
+                            if nvram_dict.get(vname):
                                 # Redundant copy of a variable we already have.
                                 continue
 
                             var_data = var.data[var.data_offset:]
-                            nvram_dict[var.name] = var_data
-                            print(f'[*] Pickled variable {var.name}')
+                            nvram_dict[vname] = var_data
+                            print(f'[*] Pickled variable {vname}')
 
     with open(nvram_file, 'wb') as nvram_pickle:
         pickle.dump(nvram_dict, nvram_pickle)
