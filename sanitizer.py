@@ -70,9 +70,10 @@ def enable_sanitized_CopyMem(ql):
         pop rdi
         pop rsi
         """
-    runcode = ql.compile(ql.archtype, code)
+    assembler = ql.create_assembler()
+    runcode, _ = assembler.asm(code)
     ptr = ql.os.heap.alloc(len(runcode))
-    ql.mem.write(ptr, runcode)
+    ql.mem.write(ptr, bytes(runcode))
 
     def my_CopyMem(ql, address, params):
         ql.os.exec_arbitrary(ptr, ptr+len(runcode))
@@ -95,9 +96,10 @@ def enable_sanitized_SetMem(ql):
         rep stosb
         pop rdi
         """
-    runcode = ql.compile(ql.archtype, code)
+    assembler = ql.create_assembler()
+    runcode, _ = assembler.asm(code)
     ptr = ql.os.heap.alloc(len(runcode))
-    ql.mem.write(ptr, runcode)
+    ql.mem.write(ptr, bytes(runcode))
 
     def my_SetMem(ql, address, params):
         ql.os.exec_arbitrary(ptr, ptr+len(runcode))
