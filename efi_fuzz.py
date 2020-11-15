@@ -88,7 +88,7 @@ def start_afl(_ql: Qiling, user_data):
         if ex != unicornafl.UC_AFL_RET_CALLED_TWICE:
             raise
 
-def main(target_binary, nvram_file, var_name, input_file, output, end, timeout, sanitize, track_uninitialized, extra_modules):
+def main(target_binary, nvram_file, var_name, input_file, output, end, timeout, sanitize, track_uninitialized, custom_script, extra_modules):
     enable_trace = output != 'off'
 
     # Listify extra modules.
@@ -122,6 +122,10 @@ def main(target_binary, nvram_file, var_name, input_file, output, end, timeout, 
     if track_uninitialized:
         enable_uninitialized_memory_tracker(ql)
 
+    if custom_script:
+        # execfile
+        exec(open(custom_script).read())
+
     # okay, ready to roll.
     try:
         ql.run(end=end, timeout=timeout)
@@ -147,9 +151,10 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--output", help="Trace execution for debugging purposes", choices=['trace', 'disasm', 'debug', 'off'], default='off')
     parser.add_argument("-n", "--no-sanitize", help="Disable memory sanitizer", action='store_true', default=False)
     parser.add_argument("-u", "--track-uninitialized", help="Track uninitialized memory (experimental!)", action='store_true', default=False)
+    parser.add_argument("-c", "--custom-script", help="Script to further customize the environment")
     parser.add_argument("-x", "--extra-modules", help="Extra modules to load", nargs='+')
 
     args = parser.parse_args()
 
     sanitize = not args.no_sanitize
-    main(args.target, args.nvram, args.varname, args.infile, args.output, args.end, args.timeout, sanitize, args.track_uninitialized, args.extra_modules)
+    main(args.target, args.nvram, args.varname, args.infile, args.output, args.end, args.timeout, sanitize, args.track_uninitialized, args.custom_script, args.extra_modules)
