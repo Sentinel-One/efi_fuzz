@@ -51,7 +51,7 @@ def SetVariable_propagate_taint(ql, address, params):
     begin = params["Data"]
     end = params["Data"] + params["DataSize"]
     if is_range_tainted(ql, begin, end):
-        ql.dprint(D_INFO, "Detected potential info leak in SetVariable()")
+        ql.dprint(D_INFO, f"Detected potential info leak in SetVariable({params})")
         ql.os.emu_error()
         os.abort()
 
