@@ -103,8 +103,9 @@ def main(target_binary, nvram_file, var_name, input_file, output, end, timeout, 
                 output=output)
 
     # Load NVRAM environment.
-    with open(nvram_file, 'rb') as f:
-        ql.env = pickle.load(f)
+    if nvram_file:
+        with open(nvram_file, 'rb') as f:
+            ql.env = pickle.load(f)
 
     # The last loaded image is the main module we're interested in fuzzing
     pe = pefile.PE(target_binary, fast_load=True)
@@ -141,7 +142,6 @@ if __name__ == "__main__":
 
     # Positional arguments
     parser.add_argument("target", help="Path to the target binary to fuzz")
-    parser.add_argument("nvram", help="Pickled dictionary containing the NVRAM environment variables")
     parser.add_argument("varname", help="Name of the NVRAM variable to mutate")
     parser.add_argument("infile", help="Mutated input buffer. Set to @@ when running under afl-fuzz")
 
@@ -152,6 +152,7 @@ if __name__ == "__main__":
     parser.add_argument("-n", "--no-sanitize", help="Disable memory sanitizer", action='store_true', default=False)
     parser.add_argument("-u", "--track-uninitialized", help="Track uninitialized memory (experimental!)", action='store_true', default=False)
     parser.add_argument("-c", "--custom-script", help="Script to further customize the environment")
+    parser.add_argument("-v", "--nvram", help="Pickled dictionary containing the NVRAM environment variables")
     parser.add_argument("-x", "--extra-modules", help="Extra modules to load", nargs='+')
 
     args = parser.parse_args()
