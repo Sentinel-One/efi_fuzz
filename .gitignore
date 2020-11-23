@@ -4,3 +4,4 @@ afl_inputs/
 afl_outputs/
 __pycache__/
 .idea/
+.vscode/
