@@ -32,6 +32,7 @@ import pefile
 import argparse
 import os
 import functools
+import importlib
 
 try:
     import monkeyhex
@@ -128,8 +129,9 @@ def main(target_binary, nvram_file, var_name, input_file, output, end, timeout, 
     protocols.smm.init(ql)
 
     if custom_script:
-        # execfile
-        exec(custom_script.read())
+        mod = importlib.import_module(custom_script)
+        if hasattr(mod, 'run'):
+            mod.run(ql)
 
     # okay, ready to roll.
     try:
@@ -155,7 +157,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--output", help="Trace execution for debugging purposes", choices=['trace', 'disasm', 'debug', 'off'], default='off')
     parser.add_argument("-s", "--sanitize", help="Enable memory sanitizer", action='store_true')
     parser.add_argument("-u", "--track-uninitialized", help="Track uninitialized memory (experimental!)", action='store_true', default=False)
-    parser.add_argument("-c", "--custom-script", help="Script to further customize the environment", type=argparse.FileType('r'))
+    parser.add_argument("-c", "--custom-script", help="Script to further customize the environment")
     parser.add_argument("-v", "--nvram", help="Pickled dictionary containing the NVRAM environment variables")
     parser.add_argument("-x", "--extra-modules", help="Extra modules to load", nargs='+')
 
