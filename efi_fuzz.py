@@ -42,6 +42,7 @@ from qiling import Qiling
 from unicorn import *
 from sanitizer import *
 from taint.tracker import enable_uninitialized_memory_tracker
+import protocols.smm
 
 # for argparse
 auto_int = functools.partial(int, base=0)
@@ -122,6 +123,9 @@ def main(target_binary, nvram_file, var_name, input_file, output, end, timeout, 
 
     if track_uninitialized:
         enable_uninitialized_memory_tracker(ql)
+
+    # Init SMM related protocols
+    protocols.smm.init(ql)
 
     if custom_script:
         # execfile
