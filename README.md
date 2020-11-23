@@ -70,3 +70,9 @@ Written by Itai Liba ([@liba2k](https://twitter.com/liba2k)) and Assaf Carlsbad 
 * `-n, --no-sanitize`: Disable the memory sanitizer (defaults to `False`).
 * `-u, --track-uninitialized`: Keeps track of uninitialized memory via Triton and taint propagation (EXPERIMENTAL!). 
 * `-x, --extra-modules`: A list of extra modules to load to satisfy the dependencies of the target. 
+
+## Further reading
+Further information regarding UEFI firmware in general and _efi_fuzz_ in particular can be found here:
+* [Moving From Common-Sense Knowledge About UEFI To Actually Dumping UEFI Firmware](https://labs.sentinelone.com/moving-from-common-sense-knowledge-about-uefi-to-actually-dumping-uefi-firmware/)
+* [Moving From Manual Reverse Engineering of UEFI Modules To Dynamic Emulation of UEFI Firmware](https://labs.sentinelone.com/moving-from-manual-re-of-uefi-modules-to-dynamic-emulation-of-uefi-firmware/)
+* [Moving From Dynamic Emulation of UEFI Modules To Coverage-Guided Fuzzing of UEFI Firmware](https://labs.sentinelone.com/moving-from-dynamic-emulation-of-uefi-modules-to-coverage-guided-fuzzing-of-uefi-firmware/)
