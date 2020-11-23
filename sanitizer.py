@@ -70,6 +70,7 @@ def enable_sanitized_CopyMem(ql):
         pop rdi
         pop rsi
         """
+        
     assembler = ql.create_assembler()
     runcode, _ = assembler.asm(code)
     ptr = ql.os.heap.alloc(len(runcode))
@@ -96,6 +97,7 @@ def enable_sanitized_SetMem(ql):
         rep stosb
         pop rdi
         """
+        
     assembler = ql.create_assembler()
     runcode, _ = assembler.asm(code)
     ptr = ql.os.heap.alloc(len(runcode))
