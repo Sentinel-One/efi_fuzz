@@ -157,4 +157,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    main(args.target, args.nvram, args.varname, args.infile, args.output, args.end, args.timeout, args.sanitize, args.track_uninitialized, args.extra_modules)
+    main(args.target, args.nvram, args.varname, args.infile, args.output, args.end, args.timeout, args.sanitize, args.track_uninitialized, args.custom_script, args.extra_modules)
