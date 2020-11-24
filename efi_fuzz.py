@@ -102,7 +102,8 @@ def main(target_binary, nvram_file, var_name, input_file, output, end, timeout, 
                 console=True if enable_trace else False,
                 stdout=1 if enable_trace else None,
                 stderr=1 if enable_trace else None,
-                output=output)
+                output=output,
+                profile="smm.ini")
 
     # Load NVRAM environment.
     if nvram_file:
