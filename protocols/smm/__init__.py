@@ -12,6 +12,9 @@ class SmmState(object):
         self.smbase = int(ql.os.profile.get("SMM", "smbase"), 0)
         self.smram_size = int(ql.os.profile.get("SMM", "smram_size"), 0)
 
+        # Reserve SMRAM
+        ql.mem.map(self.smbase, self.smram_size)
+
 def init(ql):
     # Allocate and initialize the protocols buffer
     protocol_buf_size = 0x1000
