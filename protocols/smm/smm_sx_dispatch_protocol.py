@@ -15,7 +15,7 @@ pointer_size = ctypes.sizeof(ctypes.c_void_p)
     "DispatchHandle": POINTER, #POINTER_T(POINTER_T(None))
 })
 def hook_SMM_SX_DISPATCH_Register(ql, address, params):
-    ql.os.smm_dispatch.append(params)
+    return EFI_SUCCESS
     
 @dxeapi(params={
     "This": POINTER, #POINTER_T(struct__EFI_SMM_SX_DISPATCH2_PROTOCOL)
