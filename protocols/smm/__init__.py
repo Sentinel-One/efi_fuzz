@@ -9,8 +9,8 @@ from qiling.os.uefi.utils import convert_struct_to_bytes
 class SmmState(object):
     def __init__(self, ql):
         self.swsmi_handlers = []
-        self.smbase = ql.os.profile.get("SMM", "smbase")
-        self.smram_size = ql.os.profile.get("SMM", "smram_size")
+        self.smbase = int(ql.os.profile.get("SMM", "smbase"), 0)
+        self.smram_size = int(ql.os.profile.get("SMM", "smram_size"), 0)
 
 def init(ql):
     # Allocate and initialize the protocols buffer
