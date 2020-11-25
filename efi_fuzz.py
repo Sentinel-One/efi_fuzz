@@ -129,6 +129,7 @@ def main(target_binary, nvram_file, var_name, input_file, output, end, timeout, 
     # Init SMM related protocols
     protocols.smm.init(ql)
 
+    # Run custom initialization script.
     if custom_script:
         mod = importlib.import_module(custom_script)
         if hasattr(mod, 'run'):
