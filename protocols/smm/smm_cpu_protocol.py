@@ -5,7 +5,7 @@ from qiling.os.uefi.const import *
 from qiling.const import *
 import ctypes
 
-from .save_state_area import read_smm_save_state
+from .save_state_area import read_smm_save_state, write_smm_save_state
 
 @dxeapi(params={
     "This": POINTER, #POINTER_T(struct__EFI_SMM_SW_DISPATCH2_PROTOCOL)
@@ -17,7 +17,7 @@ from .save_state_area import read_smm_save_state
 def hook_SMM_CPU_ReadSaveState(ql, address, params):
     try:
         data = read_smm_save_state(ql, params['Register'], params['Width'])
-    except KeyError as e:
+    except KeyError:
         ql.dprint(D_INFO, f"Unsupported register id {params['Register']}")
         return EFI_UNSUPPORTED
 
@@ -32,8 +32,14 @@ def hook_SMM_CPU_ReadSaveState(ql, address, params):
     "Buffer": POINTER,
 })
 def hook_SMM_CPU_WriteSaveState(ql, address, params):
-    # Since we are not really in smm mode, we can just call the function from here
-    return EFI_UNSUPPORTED
+    data = ql.mem.read(params['Buffer'], params['Width'])
+    try:
+        write_smm_save_state(ql, params['Register'], data)
+    except KeyError as e:
+        ql.dprint(D_INFO, f"Unsupported register id {params['Register']}")
+        return EFI_UNSUPPORTED
+
+    return EFI_SUCCESS
 
 
 def install_EFI_SMM_CPU_PROTOCOL(ql, start_ptr):

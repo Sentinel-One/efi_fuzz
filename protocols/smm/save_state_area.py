@@ -123,6 +123,11 @@ def read_smm_save_state(ql, reg_id, width):
     address = save_state_base + save_state_offsets[reg_id]
     return bytes(ql.mem.read(address, width))
 
+def write_smm_save_state(ql, reg_id, data):
+    save_state_base = ql.os.smm.smbase + 0x8000
+    address = save_state_base + save_state_offsets[reg_id]
+    ql.mem.write(address, bytes(data))
+
 def create_smm_save_state(ql):
     save_state_base = ql.os.smm.smbase + 0x8000
     offset = 0x7C00
@@ -194,4 +199,4 @@ def create_smm_save_state(ql):
     _write_field(ql.reg.cr3, 8)
     _write_field(ql.reg.cr0, 8)
 
-    assert(offset == 0x8000)
+    assert (offset == 0x8000)
