@@ -4,6 +4,7 @@ import subprocess
 import sys
 import argparse
 import glob
+from pathlib import Path
 
 def main(rom_file, nvram_file):
     UEFI_EXTRACT_PATH = os.path.join(os.path.dirname(__file__), 'UEFIExtract')
@@ -11,16 +12,15 @@ def main(rom_file, nvram_file):
 
     nvram_dict = {}
 
-    nvram_dir = f"{rom_file}.nvram.dir"
-    variables = glob.glob(os.path.join(nvram_dir, "*.bin"))
+    nvram_dir = f"{rom_file}.dump"
+    variables = glob.glob(os.path.join(nvram_dir, "**/*VSS*/**/body.bin"), recursive=True)
     for var_filename in variables:
         # Trim directory prefix.
-        var_name = var_filename[len(nvram_dir) + 1:]
-        # UEFIExtract generates files based on the following pattern: <varname>_<guid>_<attrs>_<num>.bin
-        var_name = "_".join(var_name.split("_")[:-3])   
-        # Update variables dictionary
-        nvram_dict[var_name] = open(var_filename, "rb").read()
-        print(f'[*] Pickled variable {var_name}')
+        parent = Path(var_filename)
+        parent_name = str(parent.parent)
+        variable_name = parent_name.split(" ")[-1]
+        nvram_dict[variable_name] = open(var_filename, "rb").read()
+        print(f'[*] Pickled variable {variable_name}')
     
     # Serialize everything.
     with open(nvram_file, 'wb') as nvram_pickle:
