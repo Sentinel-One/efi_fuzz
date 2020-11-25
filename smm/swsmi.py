@@ -26,6 +26,10 @@ def trigger_swsmi(ql, user_data=None):
         # No SMI handlers
         return False
 
+    # Apply fuzzed registers
+    for (reg, value) in ql.os.smm.swsmi_args.items():
+        ql.reg.write(reg, int.from_bytes(value, 'little'))
+        
     create_smm_save_state(ql)
 
     # Call the dispatcher

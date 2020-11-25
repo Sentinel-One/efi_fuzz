@@ -12,7 +12,8 @@ class SmmState(object):
         self.swsmi_handlers = []
         self.smbase = int(ql.os.profile.get("SMM", "smbase"), 0)
         self.smram_size = int(ql.os.profile.get("SMM", "smram_size"), 0)
-
+        self.swsmi_args = {}
+        
         # Reserve SMRAM
         ql.mem.map(self.smbase, self.smram_size)
 
