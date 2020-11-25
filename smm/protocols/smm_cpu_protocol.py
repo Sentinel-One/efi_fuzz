@@ -5,7 +5,7 @@ from qiling.os.uefi.const import *
 from qiling.const import *
 import ctypes
 
-from .save_state_area import read_smm_save_state, write_smm_save_state
+from ..save_state_area import read_smm_save_state, write_smm_save_state
 
 @dxeapi(params={
     "This": POINTER, #POINTER_T(struct__EFI_SMM_SW_DISPATCH2_PROTOCOL)

@@ -60,4 +60,4 @@ def init(ql):
     ql.mem.write(smm_base_protocol_ptr, convert_struct_to_bytes(smm_base_protocol))
     ql.mem.write(smm_variable_protocol_ptr, convert_struct_to_bytes(smm_variable_protocol))
 
-    ql.os.smm = SmmState(ql)
+    ql.os.smm = SmmState(ql)  

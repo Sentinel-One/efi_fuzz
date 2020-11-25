@@ -1,6 +1,5 @@
 from qiling.const import *
 from qiling.os.const import *
-from .const import *
 from qiling.os.uefi.utils import *
 from .smm_sw_dispatch2_type import *
 from qiling.os.uefi.fncc import *
