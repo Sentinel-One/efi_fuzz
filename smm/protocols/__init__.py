@@ -5,7 +5,7 @@ from .smm_sx_dispatch_protocol import install_EFI_SMM_SX_DISPATCH_PROTOCOL
 from .smm_base_protocol import install_EFI_SMM_BASE_PROTOCOL
 from .smm_variable_protocol import install_EFI_SMM_VARIABLE_PROTOCOL
 from .guids import *
-from qiling.os.uefi.utils import convert_struct_to_bytes
+from qiling.os.uefi.utils import convert_struct_to_bytes, write_int64
 
 class SmmState(object):
     def __init__(self, ql):
@@ -17,7 +17,7 @@ class SmmState(object):
         # Reserve SMRAM
         ql.mem.map(self.smbase, self.smram_size)
 
-def init(ql):
+def init(ql, in_smm=False):
     # Allocate and initialize the protocols buffer
     protocol_buf_size = 0x1000
     ptr = ql.os.heap.alloc(protocol_buf_size)
@@ -61,4 +61,12 @@ def init(ql):
     ql.mem.write(smm_base_protocol_ptr, convert_struct_to_bytes(smm_base_protocol))
     ql.mem.write(smm_variable_protocol_ptr, convert_struct_to_bytes(smm_variable_protocol))
 
-    ql.os.smm = SmmState(ql)  
+    ql.os.smm = SmmState(ql)
+
+    def hook_InSmm(ql, address, params):
+        nonlocal in_smm
+        write_int64(ql, params["InSmram"], in_smm)
+
+    # Replace 'InSmm' to correctly report whether or not we're executing an SMM module.
+    ql.set_api("InSmm", hook_InSmm)
+    

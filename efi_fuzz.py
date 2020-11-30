@@ -47,7 +47,6 @@ from sanitizer import *
 from taint.tracker import enable_uninitialized_memory_tracker
 import smm.protocols
 import smm.swsmi
-import protocols.smm
 
 # for argparse
 auto_int = functools.partial(int, base=0)
@@ -155,7 +154,7 @@ def main(args):
         enable_uninitialized_memory_tracker(ql)
 
     # Init SMM related protocols
-    smm.protocols.init(ql)
+    smm.protocols.init(ql, args.mode == 'swsmi')
 
     # Run custom initialization script.
     if args.custom_script:
