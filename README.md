@@ -51,6 +51,10 @@ Written by Itai Liba ([@liba2k](https://twitter.com/liba2k)) and Assaf Carlsbad 
 `git clone https://github.com/Sentinel-One/efi_fuzz` \
 `pip install -r efi_fuzz/requirements.txt`
 
+Triton is required for taint propagation. \
+Instructions for installing Triton can be found here: \
+[https://triton.quarkslab.com/documentation/doxygen/#install_sec](https://triton.quarkslab.com/documentation/doxygen/#install_sec)
+
 6. Prepare the emulated NVRAM environment: \
 `python scripts/prepare_nvram.py rom.bin nvram.pickle`
 
