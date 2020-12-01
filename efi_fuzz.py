@@ -160,8 +160,8 @@ def main(args):
     smm.protocols.init(ql, args.mode == 'swsmi')
 
     # Run custom initialization script.
-    if args.custom_script:
-        mod = importlib.import_module(args.custom_script)
+    if args.load_package:
+        mod = importlib.import_module(args.load_package)
         if hasattr(mod, 'run'):
             mod.run(ql)
 
@@ -187,7 +187,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--output", help="Trace execution for debugging purposes", choices=['trace', 'disasm', 'debug', 'off'], default='off')
     parser.add_argument("-s", "--sanitize", help="Enable memory sanitizer", action='store_true')
     parser.add_argument("-u", "--track-uninitialized", help="Track uninitialized memory (experimental!)", action='store_true', default=False)
-    parser.add_argument("-c", "--custom-script", help="Script to further customize the environment")
+    parser.add_argument("-l", "--load-package", help="Load a package to further customize the environment")
     parser.add_argument("-v", "--nvram-file", help="Pickled dictionary containing the NVRAM environment variables")
     parser.add_argument("-x", "--extra-modules", help="Extra modules to load", nargs='+')
 
