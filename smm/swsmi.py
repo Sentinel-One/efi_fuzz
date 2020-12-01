@@ -3,8 +3,14 @@ from qiling.os.uefi.utils import convert_struct_to_bytes
 from qiling.const import D_INFO
 import ctypes
 
+import sys
+sys.path.append('..')
+from sanitizers.smm import activate_smm_sanitizer
+
 def after_module_execution_callback(ql, number_of_modules_left):
     if number_of_modules_left == 0:
+        if ql.os.smm.sanitize:
+            activate_smm_sanitizer(ql)
         return trigger_swsmi(ql)
     return False
 
@@ -16,8 +22,6 @@ class EFI_SMM_SW_CONTEXT(ctypes.Structure):
     ]
 
 def trigger_next_smi_handler(ql):
-    pointer_size = 8
-
     (smi_num, smi_params) = ql.os.smm.swsmi_handlers.pop(0)
     ql.dprint(D_INFO, f"Executing SMI 0x{smi_num:x} with params {smi_params}")
     

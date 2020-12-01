@@ -43,7 +43,8 @@ except ImportError:
 from qiling import arch
 from qiling import Qiling
 from unicorn import *
-from sanitizer import *
+from sanitizers.memory import *
+from sanitizers.smm import *
 from taint.tracker import enable_uninitialized_memory_tracker
 import smm.protocols
 import smm.swsmi
@@ -148,11 +149,6 @@ def main(args):
         # We want AFL's forkserver to spawn new copies starting from the main module's entrypoint.
         ql.hook_address(callback=start_afl, address=entry_point, user_data=args)
 
-    if args.sanitize:
-        enable_sanitized_heap(ql)
-        enable_sanitized_CopyMem(ql)
-        enable_sanitized_SetMem(ql)
-
     if args.track_uninitialized:
         enable_uninitialized_memory_tracker(ql)
 
@@ -164,6 +160,12 @@ def main(args):
         mod = importlib.import_module(args.load_package)
         if hasattr(mod, 'run'):
             mod.run(ql)
+
+    if args.sanitize:
+        enable_sanitized_heap(ql)
+        enable_sanitized_CopyMem(ql)
+        enable_sanitized_SetMem(ql)
+        enable_smm_sanitizer(ql)
 
     # okay, ready to roll.
     try:

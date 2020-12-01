@@ -15,6 +15,7 @@ class SmmState(object):
         self.smbase = int(ql.os.profile.get("SMM", "smbase"), 0)
         self.smram_size = int(ql.os.profile.get("SMM", "smram_size"), 0)
         self.swsmi_args = {}
+        self.sanitize = False
         
         # Communication buffer
         self.comm_buffer = ql.os.heap.alloc(ctypes.sizeof(EFI_SMM_SW_CONTEXT))
