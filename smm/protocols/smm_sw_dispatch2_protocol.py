@@ -6,10 +6,6 @@ from qiling.os.uefi.fncc import *
 
 pointer_size = ctypes.sizeof(ctypes.c_void_p)
 
-def free_pointers(ql, address, params):
-    ql.os.heap.free(address)
-    return EFI_SUCCESS
-
 @dxeapi(params={
     "This": POINTER, #POINTER_T(struct__EFI_SMM_SW_DISPATCH2_PROTOCOL)
     "DispatchFunction": POINTER, #POINTER_T(ctypes.CFUNCTYPE(ctypes.c_uint64, POINTER_T(None), POINTER_T(None), POINTER_T(None), POINTER_T(ctypes.c_uint64)))
@@ -17,8 +13,10 @@ def free_pointers(ql, address, params):
     "DispatchHandle": POINTER, #POINTER_T(POINTER_T(None))
 })
 def hook_SMM_SW_DISPATCH2_Register(ql, address, params):
-    # Let's save the dispatch params, so they can be triggered if needed. 
-    ql.os.smm.swsmi_handlers.append(params)
+    # Let's save the dispatch params, so they can be triggered if needed.
+    smi_num = int.from_bytes(ql.mem.read(params['RegisterContext'], 8), 'little')
+    ql.os.smm.swsmi_handlers.append((smi_num, params))
+    return EFI_SUCCESS
     
 @dxeapi(params={
     "This": POINTER, #POINTER_T(struct__EFI_SMM_SW_DISPATCH2_PROTOCOL)

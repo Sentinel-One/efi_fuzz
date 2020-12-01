@@ -20,7 +20,8 @@ smram = 0
     "DispatchHandle": POINTER, #POINTER_T(POINTER_T(None))
 })
 def hook_SMM_SW_DISPATCH_Register(ql, address, params):
-    ql.os.smm.swsmi_handlers.append(params)
+    smi_num = int.from_bytes(ql.mem.read(params['RegisterContext'], 8), 'little')
+    ql.os.smm.swsmi_handlers.append((smi_num, params))
     return EFI_SUCCESS
     
 @dxeapi(params={

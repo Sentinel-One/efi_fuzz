@@ -6,6 +6,8 @@ from .smm_base_protocol import install_EFI_SMM_BASE_PROTOCOL
 from .smm_variable_protocol import install_EFI_SMM_VARIABLE_PROTOCOL
 from .guids import *
 from qiling.os.uefi.utils import convert_struct_to_bytes, write_int64
+from ..swsmi import EFI_SMM_SW_CONTEXT
+import ctypes
 
 class SmmState(object):
     def __init__(self, ql):
@@ -13,6 +15,11 @@ class SmmState(object):
         self.smbase = int(ql.os.profile.get("SMM", "smbase"), 0)
         self.smram_size = int(ql.os.profile.get("SMM", "smram_size"), 0)
         self.swsmi_args = {}
+        
+        # Communication buffer
+        self.comm_buffer = ql.os.heap.alloc(ctypes.sizeof(EFI_SMM_SW_CONTEXT))
+        self.comm_buffer_size = ql.os.heap.alloc(ctypes.sizeof(ctypes.c_void_p))
+        ql.mem.write(self.comm_buffer_size, ctypes.sizeof(EFI_SMM_SW_CONTEXT).to_bytes(ctypes.sizeof(ctypes.c_void_p), 'little'))
         
         # Reserve SMRAM
         ql.mem.map(self.smbase, self.smram_size)
