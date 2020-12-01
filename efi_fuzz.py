@@ -88,7 +88,10 @@ def start_afl(_ql: Qiling, user_data):
             return True
 
         # Some other internal exception.
-        return (_ql.internal_exception is not None) or (err.errno != UC_ERR_OK)
+        crash = (_ql.internal_exception is not None) or (err.errno != UC_ERR_OK)
+        if crash and args.output == 'debug':
+            _ql.os.emu_error()
+        return crash
 
     # Choose the function to inject the mutated input to the emulation environment,
     # based on the fuzzing mode.
