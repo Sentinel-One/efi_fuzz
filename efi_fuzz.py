@@ -126,7 +126,7 @@ def main(args):
                 stdout=1 if enable_trace else None,
                 stderr=1 if enable_trace else None,
                 output=args.output,
-                profile="smm.ini")
+                profile="smm/smm.ini")
 
     ql.os.notify_after_module_execution = smm.swsmi.after_module_execution_callback
 
