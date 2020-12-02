@@ -6,7 +6,7 @@ from .smm_base_protocol import install_EFI_SMM_BASE_PROTOCOL
 from .smm_variable_protocol import install_EFI_SMM_VARIABLE_PROTOCOL
 from .guids import *
 from qiling.os.uefi.utils import convert_struct_to_bytes, write_int64
-from ..swsmi import EFI_SMM_SW_CONTEXT
+from ..swsmi import EFI_SMM_SW_CONTEXT, trigger_swsmi
 import ctypes
 
 class SmmState(object):
@@ -15,7 +15,6 @@ class SmmState(object):
         self.smbase = int(ql.os.profile.get("SMM", "smbase"), 0)
         self.smram_size = int(ql.os.profile.get("SMM", "smram_size"), 0)
         self.swsmi_args = {}
-        self.sanitize = False
         
         # Communication buffer
         self.comm_buffer = ql.os.heap.alloc(ctypes.sizeof(EFI_SMM_SW_CONTEXT))
@@ -77,4 +76,11 @@ def init(ql, in_smm=False):
 
     # Replace 'InSmm' to correctly report whether or not we're executing an SMM module.
     ql.set_api("InSmm", hook_InSmm)
+
+    def after_module_execution_callback(ql, number_of_modules_left):
+        if number_of_modules_left == 0:
+            return trigger_swsmi(ql)
+        return False
+
+    ql.os.after_module_execution_callbacks.append(after_module_execution_callback)
     

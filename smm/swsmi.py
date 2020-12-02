@@ -3,16 +3,6 @@ from qiling.os.uefi.utils import convert_struct_to_bytes
 from qiling.const import D_INFO
 import ctypes
 
-import sys
-sys.path.append('..')
-from sanitizers.smm import activate_smm_sanitizer
-
-def after_module_execution_callback(ql, number_of_modules_left):
-    if number_of_modules_left == 0:
-        if ql.os.smm.sanitize:
-            activate_smm_sanitizer(ql)
-        return trigger_swsmi(ql)
-    return False
 
 class EFI_SMM_SW_CONTEXT(ctypes.Structure):
     _fields_ = [

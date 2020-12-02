@@ -43,8 +43,7 @@ except ImportError:
 from qiling import arch
 from qiling import Qiling
 from unicorn import *
-from sanitizers.memory import *
-from sanitizers.smm import *
+import sanitizers
 import taint
 import taint.tracker
 import smm.protocols
@@ -96,7 +95,7 @@ def start_afl(_ql: Qiling, user_data):
 
         if crash and args.output == 'debug':
             _ql.os.emu_error()
-            
+
         return crash
 
     # Choose the function to inject the mutated input to the emulation environment,
@@ -122,6 +121,10 @@ def start_afl(_ql: Qiling, user_data):
         if ex != unicornafl.UC_AFL_RET_CALLED_TWICE:
             raise
 
+def after_module_execution_callback(ql, number_of_modules_left):
+    for callback in ql.os.after_module_execution_callbacks:
+        callback(ql, number_of_modules_left)
+
 def main(args):
     enable_trace = args.output != 'off'
 
@@ -137,7 +140,8 @@ def main(args):
                 output=args.output,
                 profile="smm/smm.ini")
 
-    ql.os.notify_after_module_execution = smm.swsmi.after_module_execution_callback
+    ql.os.after_module_execution_callbacks = []
+    ql.os.notify_after_module_execution = after_module_execution_callback
 
     # Load NVRAM environment.
     if args.nvram_file:
@@ -166,11 +170,9 @@ def main(args):
         if hasattr(mod, 'run'):
             mod.run(ql)
 
-    if args.sanitize:
-        enable_sanitized_heap(ql)
-        enable_sanitized_CopyMem(ql)
-        enable_sanitized_SetMem(ql)
-        enable_smm_sanitizer(ql)
+    # for name in args.sanitize:
+    sanitizers.smm_sanitizer.smm_sanitizer(ql).enable()
+    sanitizers.memory_sanitizer.memory_sanitizer(ql).enable()
 
     # okay, ready to roll.
     try:
@@ -193,7 +195,7 @@ if __name__ == "__main__":
     parser.add_argument("-e", "--end", help="End address for emulation", type=auto_int)
     parser.add_argument("-t", "--timeout", help="Emulation timeout in ms", type=int, default=60*100000)
     parser.add_argument("-o", "--output", help="Trace execution for debugging purposes", choices=['trace', 'disasm', 'debug', 'off'], default='off')
-    parser.add_argument("-s", "--sanitize", help="Enable memory sanitizer", action='store_true')
+    parser.add_argument("-s", "--sanitize", help="Enable memory sanitizer", choices=sanitizers.get_available_sanitizers().keys())
     parser.add_argument("--taint", help="Track uninitialized memory (experimental!)", choices=taint.get_available_tainters().keys(), nargs='+')
     parser.add_argument("-l", "--load-package", help="Load a package to further customize the environment")
     parser.add_argument("-v", "--nvram-file", help="Pickled dictionary containing the NVRAM environment variables")
