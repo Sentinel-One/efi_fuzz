@@ -10,11 +10,13 @@ def ReadSaveState_propagate_taint(ql, address, params):
 
 class smm_memory_tainter(base_tainter):
 
+    NAME = 'smm'
+
     def __init__(self):
         super().__init__()
 
     def register(self, ql):
-        super().register(ql, 'smm')
+        super().register(ql, self.NAME)
 
         ql.set_api("SMM_CPU_ReadSaveState", ReadSaveState_propagate_taint, QL_INTERCEPT.EXIT)
 

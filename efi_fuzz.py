@@ -45,7 +45,8 @@ from qiling import Qiling
 from unicorn import *
 from sanitizers.memory import *
 from sanitizers.smm import *
-from taint.tracker import enable_uninitialized_memory_tracker
+import taint
+import taint.tracker
 import smm.protocols
 import smm.swsmi
 
@@ -149,8 +150,8 @@ def main(args):
         # We want AFL's forkserver to spawn new copies starting from the main module's entrypoint.
         ql.hook_address(callback=start_afl, address=entry_point, user_data=args)
 
-    if args.track_uninitialized:
-        enable_uninitialized_memory_tracker(ql)
+    if args.taint:
+        taint.tracker.enable(ql, args.taint)
 
     # Init SMM related protocols
     smm.protocols.init(ql, args.mode == 'swsmi')
@@ -177,6 +178,7 @@ def main(args):
     os._exit(0)  # that's a looot faster than tidying up.
 
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
@@ -188,7 +190,7 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--timeout", help="Emulation timeout in ms", type=int, default=60*100000)
     parser.add_argument("-o", "--output", help="Trace execution for debugging purposes", choices=['trace', 'disasm', 'debug', 'off'], default='off')
     parser.add_argument("-s", "--sanitize", help="Enable memory sanitizer", action='store_true')
-    parser.add_argument("-u", "--track-uninitialized", help="Track uninitialized memory (experimental!)", action='store_true', default=False)
+    parser.add_argument("--taint", help="Track uninitialized memory (experimental!)", choices=taint.get_available_tainters().keys(), nargs='+')
     parser.add_argument("-l", "--load-package", help="Load a package to further customize the environment")
     parser.add_argument("-v", "--nvram-file", help="Pickled dictionary containing the NVRAM environment variables")
     parser.add_argument("-x", "--extra-modules", help="Extra modules to load", nargs='+')

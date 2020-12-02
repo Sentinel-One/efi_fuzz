@@ -7,17 +7,16 @@ from .smm_memory_tainter import smm_memory_tainter
 import capstone
 from capstone.x86_const import *
 import triton
+from . import get_available_tainters
 
 cs = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_64)
 cs.detail = True
 
-def enable_uninitialized_memory_tracker(ql):
+def enable(ql, tainters):
     
-    u = uninitialized_memory_tainter()
-    u.register(ql)
-
-    s = smm_memory_tainter()
-    s.register(ql)
+    for name in tainters:
+        tainter = get_available_tainters()[name]()
+        tainter.register(ql)
 
     def hook_opcode(ql, address, size):
         global cs

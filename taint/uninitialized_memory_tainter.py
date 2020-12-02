@@ -57,11 +57,13 @@ def SetVariable_propagate_taint(ql, address, params):
 
 class uninitialized_memory_tainter(base_tainter):
 
+    NAME = 'uninitialized'
+
     def __init__(self):
         super().__init__()
 
     def register(self, ql):
-        super().register(ql, 'uninitialized')
+        super().register(ql, self.NAME)
 
         ql.set_api("SetMem", SetMem_propagate_taint, QL_INTERCEPT.EXIT)
         ql.set_api("CopyMem", CopyMem_propagate_taint, QL_INTERCEPT.EXIT)

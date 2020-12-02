@@ -10,6 +10,12 @@ class base_tainter(ABC):
         self.triton_ctx.setMode(triton.MODE.ALIGNED_MEMORY, True)
         self.triton_ctx.setAstRepresentationMode(triton.AST_REPRESENTATION.PYTHON)
 
+    @property
+    @staticmethod
+    @abstractmethod
+    def NAME():
+        raise NotImplementedError
+
     def register(self, ql, name):
         if not hasattr(ql, 'tainters'):
             ql.tainters = {}
@@ -40,8 +46,13 @@ class base_tainter(ABC):
         self.triton_ctx.setConcreteRegisterValue(self.triton_ctx.registers.fs, ql.reg.fs)
         self.triton_ctx.setConcreteRegisterValue(self.triton_ctx.registers.gs, ql.reg.gs)
 
+    @abstractmethod
     def instruction_hook(self, ql, instruction):
-        pass
+        raise NotImplementedError()
+
+    #
+    # Taint utilities
+    #
 
     def set_taint_range(self, begin, end, taint):
         # Apply taint for the entire memory range.
