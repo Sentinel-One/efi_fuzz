@@ -170,9 +170,9 @@ def main(args):
         if hasattr(mod, 'run'):
             mod.run(ql)
 
-    # for name in args.sanitize:
-    sanitizers.smm_sanitizer.smm_sanitizer(ql).enable()
-    sanitizers.memory_sanitizer.memory_sanitizer(ql).enable()
+    # Enable sanitizers.
+    for name in args.sanitize:
+        sanitizers.get(name)(ql).enable()
 
     # okay, ready to roll.
     try:
@@ -195,7 +195,7 @@ if __name__ == "__main__":
     parser.add_argument("-e", "--end", help="End address for emulation", type=auto_int)
     parser.add_argument("-t", "--timeout", help="Emulation timeout in ms", type=int, default=60*100000)
     parser.add_argument("-o", "--output", help="Trace execution for debugging purposes", choices=['trace', 'disasm', 'debug', 'off'], default='off')
-    parser.add_argument("-s", "--sanitize", help="Enable memory sanitizer", choices=sanitizers.get_available_sanitizers().keys())
+    parser.add_argument("-s", "--sanitize", help="Enable memory sanitizer", choices=sanitizers.get_available_sanitizers().keys(), nargs='+')
     parser.add_argument("--taint", help="Track uninitialized memory (experimental!)", choices=taint.get_available_tainters().keys(), nargs='+')
     parser.add_argument("-l", "--load-package", help="Load a package to further customize the environment")
     parser.add_argument("-v", "--nvram-file", help="Pickled dictionary containing the NVRAM environment variables")

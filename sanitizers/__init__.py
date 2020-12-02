@@ -17,4 +17,4 @@ def get_available_sanitizers():
     return { subcls.NAME:subcls for subcls in get_all_subclasses(base_sanitizer) }
 
 def get(name):
-    pass
+    return get_available_sanitizers()[name]
