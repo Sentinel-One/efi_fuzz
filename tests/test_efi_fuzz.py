@@ -29,11 +29,11 @@ def test_uninitialized_memory_tracker():
         assert params['VariableName'] == 'bar' and params['DataSize'] == 0x14
         begin = params['Data']
         end = params['Data'] + params['DataSize']
-        tainted_bytes = get_taint_range(ql, begin, end)
+        tainted_bytes = ql.tainters['uninitialized'].get_taint_range(begin, end)
         assert tainted_bytes == [True, True, True, True, True, True, False, False, False, False,
                                  True, True, True, True, True, True, True, False, True, True]
         # Un-taint to avoid crashing the process.
-        set_taint_range(ql, begin, end, False)
+        ql.tainters['uninitialized'].set_taint_range(begin, end, False)
         return (address, params)
 
     # Hook SetVariable() to check the taint on the buffer.

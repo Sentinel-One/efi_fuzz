@@ -27,9 +27,11 @@ def CopyMem_propagate_taint(ql, address, params):
 
 def AllocatePool_propagate_taint(ql, address, params):
     """
-    Taint propagation for AllocatePool().
+    Taint propagation for Alloca
+    tePool().
     We know that all pool memory is initially uninitialized, so we taint it.
     """
+    import ipdb; ipdb.set_trace()
     begin = read_int64(ql, params['Buffer'])
     end = begin + params['Size']
     set_taint_range(ql, begin, end, True)
