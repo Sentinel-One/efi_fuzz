@@ -91,8 +91,12 @@ def start_afl(_ql: Qiling, user_data):
 
         # Some other internal exception.
         crash = (_ql.internal_exception is not None) or (err.errno != UC_ERR_OK)
+        if args.mode == 'swsmi' and (err.errno == UC_ERR_READ_UNMAPPED) or (err.errno == UC_ERR_WRITE_UNMAPPED):
+            crash = False
+
         if crash and args.output == 'debug':
             _ql.os.emu_error()
+            
         return crash
 
     # Choose the function to inject the mutated input to the emulation environment,
