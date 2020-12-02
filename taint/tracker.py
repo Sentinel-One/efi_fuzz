@@ -3,20 +3,21 @@
 #
 
 from .uninitialized_memory_tainter import uninitialized_memory_tainter
+from .smm_memory_tainter import smm_memory_tainter
 import capstone
 from capstone.x86_const import *
 import triton
-from taint.uefi import *
 
 cs = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_64)
 cs.detail = True
-
-
 
 def enable_uninitialized_memory_tracker(ql):
     
     u = uninitialized_memory_tainter()
     u.register(ql)
+
+    s = smm_memory_tainter()
+    s.register(ql)
 
     def hook_opcode(ql, address, size):
         global cs

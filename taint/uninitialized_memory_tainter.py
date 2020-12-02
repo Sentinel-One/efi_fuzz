@@ -1,5 +1,4 @@
 from .base_tainter import base_tainter
-from .primitives import *
 from qiling.const import *
 import os
 from qiling.os.uefi.utils import read_int64
@@ -63,7 +62,6 @@ class uninitialized_memory_tainter(base_tainter):
 
     def register(self, ql):
         super().register(ql, 'uninitialized')
-        # ql.tainters['uninitialized'] = self.triton_ctx
 
         ql.set_api("SetMem", SetMem_propagate_taint, QL_INTERCEPT.EXIT)
         ql.set_api("CopyMem", CopyMem_propagate_taint, QL_INTERCEPT.EXIT)

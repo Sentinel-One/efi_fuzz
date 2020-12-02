@@ -40,8 +40,7 @@ class base_tainter(ABC):
         self.triton_ctx.setConcreteRegisterValue(self.triton_ctx.registers.fs, ql.reg.fs)
         self.triton_ctx.setConcreteRegisterValue(self.triton_ctx.registers.gs, ql.reg.gs)
 
-    @abstractmethod
-    def instruction_hook(self):
+    def instruction_hook(self, ql, instruction):
         pass
 
     def set_taint_range(self, begin, end, taint):
