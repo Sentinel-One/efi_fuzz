@@ -39,3 +39,4 @@ def enable(ql, tainters):
 
     # Hook every opcode.
     ql.hook_code(hook_opcode)
+    

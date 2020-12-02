@@ -15,3 +15,4 @@ def get_available_tainters():
         return all_subclasses
 
     return { subcls.NAME:subcls for subcls in get_all_subclasses(base_tainter) }
+

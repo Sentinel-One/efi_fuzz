@@ -21,7 +21,7 @@ class smm_memory_tainter(base_tainter):
         ql.set_api("SMM_CPU_ReadSaveState", ReadSaveState_propagate_taint, QL_INTERCEPT.EXIT)
 
     @staticmethod
-    def effective_address(ql, operand):
+    def compute_effective_address(ql, operand):
         
         assert operand.type == capstone.CS_OP_MEM
         assert operand.access == capstone.CS_AC_WRITE
@@ -46,7 +46,7 @@ class smm_memory_tainter(base_tainter):
         if destination.type != capstone.CS_OP_MEM or destination.access != capstone.CS_AC_WRITE:
             return
 
-        address = self.effective_address(ql, destination)
+        address = self.compute_effective_address(ql, destination)
         
         if address < ql.os.smm.smbase or address > ql.os.smm.smbase + ql.os.smm.smram_size:
             # Outside SMRAM
@@ -63,3 +63,4 @@ class smm_memory_tainter(base_tainter):
             ql.dprint(D_INFO, "***")
             ql.os.emu_error()
             os.abort()
+            
