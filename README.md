@@ -1,3 +1,6 @@
+[![Gitter chat](https://badges.gitter.im/gitterHQ/gitter.png)](https://gitter.im/efi_fuzz/community)
+___
+
 # efi_fuzz
 A simple, coverage-guided fuzzer for UEFI NVRAM variables.
 Based on [Qiling](https://github.com/qilingframework/qiling) and [AFL++](https://github.com/AFLplusplus/AFLplusplus).\
