@@ -4,6 +4,7 @@ from .smm_sw_dispatch2_protocol import install_EFI_SMM_SW_DISPATCH2_PROTOCOL
 from .smm_sx_dispatch_protocol import install_EFI_SMM_SX_DISPATCH_PROTOCOL
 from .smm_base_protocol import install_EFI_SMM_BASE_PROTOCOL
 from .smm_variable_protocol import install_EFI_SMM_VARIABLE_PROTOCOL
+from .mm_access_protocol import init_GetCapabilities
 from .guids import *
 from qiling.os.uefi.utils import convert_struct_to_bytes, write_int64
 from ..swsmi import EFI_SMM_SW_CONTEXT, trigger_swsmi
@@ -84,3 +85,4 @@ def init(ql, in_smm=False):
 
     ql.os.after_module_execution_callbacks.append(after_module_execution_callback)
     
+    init_GetCapabilities(ql)

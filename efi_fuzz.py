@@ -171,8 +171,9 @@ def main(args):
             mod.run(ql)
 
     # Enable sanitizers.
-    for name in args.sanitize:
-        sanitizers.get(name)(ql).enable()
+    if args.sanitize:
+        for name in args.sanitize:
+            sanitizers.get(name)(ql).enable()
 
     # okay, ready to roll.
     try:
