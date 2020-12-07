@@ -21,22 +21,24 @@ EFI_NEEDS_TESTING = 0x00000020
 EFI_NEEDS_ECC_INITIALIZATION = 0x00000040
 
 def hook_GetCapabilities(ql, address, params):
-    number_of_map_info_entries = 1 # We only support one smram region
-    struct_size = sizeof(EFI_MMRAM_DESCRIPTOR)
-    buffer_size = number_of_map_info_entries * struct_size
-    write_int64(ql, params["MmramMapSize"], buffer_size)
+    
+    write_int64(ql, params["MmramMapSize"], ql.os.get_capabilities_info_size)
     if params['MmramMap'] != 0:
-        ptr  = ql.os.heap.alloc(buffer_size)
-        efi_mmram_descriptor = EFI_MMRAM_DESCRIPTOR()
-        efi_mmram_descriptor.PhysicalStart = ql.os.smm.smbase
-        efi_mmram_descriptor.CpuStart = ql.os.smm.smbase
-        efi_mmram_descriptor.PhysicalSize = ql.os.smm.smram_size
-        efi_mmram_descriptor.RegionState = EFI_ALLOCATED
-        ql.mem.write(ptr, convert_struct_to_bytes(efi_mmram_descriptor))
-        write_int64(ql, params['MmramMap'], ptr)
+        write_int64(ql, params['MmramMap'], ql.os.get_capabilities_info)
         return EFI_SUCCESS
     return EFI_BUFFER_TOO_SMALL
 
 def init_GetCapabilities(ql):
+    number_of_map_info_entries = 1 # We only support one smram region
+    struct_size = sizeof(EFI_MMRAM_DESCRIPTOR)
+    ql.os.get_capabilities_info_size = number_of_map_info_entries * struct_size
+    ql.os.get_capabilities_info  = ql.os.heap.alloc(ql.os.get_capabilities_info_size)
+    efi_mmram_descriptor = EFI_MMRAM_DESCRIPTOR()
+    efi_mmram_descriptor.PhysicalStart = ql.os.smm.smbase
+    efi_mmram_descriptor.CpuStart = ql.os.smm.smbase
+    efi_mmram_descriptor.PhysicalSize = ql.os.smm.smram_size
+    efi_mmram_descriptor.RegionState = EFI_ALLOCATED
+    ql.mem.write(ql.os.get_capabilities_info, convert_struct_to_bytes(efi_mmram_descriptor))
+
     ql.set_api("GetCapabilities", hook_GetCapabilities)
 
