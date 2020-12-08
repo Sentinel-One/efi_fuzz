@@ -54,7 +54,6 @@ def hook_SmmAllocatePool(ql, address, params):
     "FloatingPointSave": INT,
 })
 def hook_RegisterCallback(ql, address, params):
-    import ipdb; ipdb.set_trace()
     return EFI_INVALID_PARAMETER
 
 @dxeapi(params={
