@@ -7,6 +7,7 @@ from .smm_variable_protocol import install_EFI_SMM_VARIABLE_PROTOCOL
 from .mm_access_protocol import init_GetCapabilities
 from .guids import *
 from qiling.os.uefi.utils import convert_struct_to_bytes, write_int64
+from qiling.os.memory import QlMemoryHeap
 from ..swsmi import EFI_SMM_SW_CONTEXT, trigger_swsmi
 import ctypes
 
@@ -22,8 +23,14 @@ class SmmState(object):
         self.comm_buffer_size = ql.os.heap.alloc(ctypes.sizeof(ctypes.c_void_p))
         ql.mem.write(self.comm_buffer_size, ctypes.sizeof(EFI_SMM_SW_CONTEXT).to_bytes(ctypes.sizeof(ctypes.c_void_p), 'little'))
         
-        # Reserve SMRAM
-        ql.mem.map(self.smbase, self.smram_size)
+        if ql.mem.is_available(self.smbase, self.smram_size):
+            heap_size = 0x10000
+            # Reserve SMRAM and create the SMM heap. The SMM heap will occupy the upper 64KB of SMRAM.
+            ql.mem.map(self.smbase, self.smram_size - heap_size)
+            self.heap = QlMemoryHeap(ql, self.smbase + self.smram_size - heap_size, self.smbase + self.smram_size)
+        else:
+            raise RuntimeError(f"Can't allocate SMRAM at 0x{self.smbase:x}-0x{self.smbase+self.smram_size:x}, \
+region is already occupied")
 
 def init(ql, in_smm=False):
     # Allocate and initialize the protocols buffer
