@@ -16,6 +16,7 @@ class SmmState(object):
         self.swsmi_handlers = []
         self.smbase = int(ql.os.profile.get("SMM", "smbase"), 0)
         self.smram_size = int(ql.os.profile.get("SMM", "smram_size"), 0)
+        self.heap_size = int(ql.os.profile.get("SMM", "heap_size"), 0)
         self.swsmi_args = {}
         
         # Communication buffer
@@ -23,11 +24,13 @@ class SmmState(object):
         self.comm_buffer_size = ql.os.heap.alloc(ctypes.sizeof(ctypes.c_void_p))
         ql.mem.write(self.comm_buffer_size, ctypes.sizeof(EFI_SMM_SW_CONTEXT).to_bytes(ctypes.sizeof(ctypes.c_void_p), 'little'))
         
+        if self.smram_size - self.heap_size < 0x10000:
+            raise RuntimeError(f"SMRAM must be at least 64kb in size")
+
         if ql.mem.is_available(self.smbase, self.smram_size):
-            heap_size = 0x10000
-            # Reserve SMRAM and create the SMM heap. The SMM heap will occupy the upper 64KB of SMRAM.
-            ql.mem.map(self.smbase, self.smram_size - heap_size)
-            self.heap = QlMemoryHeap(ql, self.smbase + self.smram_size - heap_size, self.smbase + self.smram_size)
+            # Reserve SMRAM and create the SMM heap. The SMM heap will occupy the upper portion of SMRAM.
+            ql.mem.map(self.smbase, self.smram_size - self.heap_size)
+            self.heap = QlMemoryHeap(ql, self.smbase + self.smram_size - self.heap_size, self.smbase + self.smram_size)
         else:
             raise RuntimeError(f"Can't allocate SMRAM at 0x{self.smbase:x}-0x{self.smbase+self.smram_size:x}, \
 region is already occupied")
