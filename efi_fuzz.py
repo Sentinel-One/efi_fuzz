@@ -162,7 +162,7 @@ def main(args):
         taint.tracker.enable(ql, args.taint)
 
     # Init SMM related protocols
-    smm.protocols.init(ql, args.mode == 'swsmi')
+    smm.init(ql, args.mode == 'swsmi')
 
     # Run custom initialization script.
     if args.load_package:
