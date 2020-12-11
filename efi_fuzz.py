@@ -131,6 +131,8 @@ def main(args):
     # Listify extra modules.
     if args.extra_modules is None:
         extra_modules = []
+    else:
+        extra_modules = args.extra_modules
 
     ql = Qiling(extra_modules + [args.target],
                 ".",                                        # rootfs
