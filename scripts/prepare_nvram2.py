@@ -6,8 +6,21 @@ import argparse
 import glob
 from pathlib import Path
 
+def get_uefiextract():
+    if sys.platform == "linux":
+        platform = "linux"
+        uefiextract = "UEFIExtract"
+    elif sys.platform == "darwin":
+        platform = "mac"
+        uefiextract = "UEFIExtract"
+    elif sys.platform == "win32":
+        platform = "windows"
+        uefiextract = "UEFIExtract.exe"
+
+    return os.path.join(Path(__file__).parent.parent, 'bin', platform, uefiextract)
+
 def main(rom_file, nvram_file):
-    UEFI_EXTRACT_PATH = os.path.join(os.path.dirname(__file__), 'UEFIExtract')
+    UEFI_EXTRACT_PATH = get_uefiextract()
     subprocess.run([UEFI_EXTRACT_PATH, rom_file], stdout=subprocess.DEVNULL)
 
     nvram_dict = {}
