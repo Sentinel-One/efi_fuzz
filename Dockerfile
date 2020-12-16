@@ -28,4 +28,7 @@ RUN git clone https://github.com/AFLplusplus/AFLplusplus.git && cd AFLplusplus/ 
 RUN wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py
 
 COPY requirements.txt efi_fuzz_requirements.txt
+# uefi-firmware-parser in pypi is too old, let's use the one from github
+RUN pip3 install git+https://github.com/theopolis/uefi-firmware-parser.git 
 RUN pip3 install -r efi_fuzz_requirements.txt
+RUN pip3 install debugpy
