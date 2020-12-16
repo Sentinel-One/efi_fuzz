@@ -1,5 +1,6 @@
 import sys
 import struct
+import pickle
 from qiling import Qiling
 from qiling.const import *
 from unicorn import *
@@ -87,8 +88,11 @@ def run(env, rom_file, volume_guid, outdir):
             # Restore the state to the end of the last secessful module.
             ql.restore(ql.state)
             begin = ql.reg.arch_pc
-
+    print(f'We didnt load {len(ql.os.unloaded_modules)} modules')
 
 
 if __name__ == "__main__":
-    run({}, 'rom2.bin', '4f1c52d3-d824-4d2a-a2f0-ec40c23c5916', '/tmp')
+    env = {}
+    with open('rom2_nvar.pickel', 'rb') as f:
+        env = pickle.load(f)
+    run(env, 'rom2.bin', '4f1c52d3-d824-4d2a-a2f0-ec40c23c5916', '/tmp')
