@@ -76,7 +76,13 @@ def start_afl(_ql: Qiling, user_data):
         _input = _input.ljust(total_size, b'\x00') # zero padding
 
         stream = io.BytesIO(_input)
-        for reg in args.registers:
+
+        if 'ALL' in args.registers:
+            fuzz_regs = smm.swsmi.fuzzable_registers()
+        else:
+            fuzz_regs = args.registers
+
+        for reg in fuzz_regs:
             _ql.os.smm.swsmi_args[reg] = stream.read(8)
 
     def validate_crash(uc, err, _input, persistent_round, user_data):
@@ -213,7 +219,7 @@ if __name__ == "__main__":
     
     # SWSMI sub-command
     swsmi_subparser = subparsers.add_parser("swsmi", help="Fuzz arguments of SWSMI handlers")
-    swsmi_subparser.add_argument("registers", help="List of registers to fuzz", choices=['rax','rbx','rcx','rdx','rsi','rdi'], nargs='+')
+    swsmi_subparser.add_argument("registers", metavar='<registers>|ALL', help="List of registers to fuzz", choices=smm.swsmi.fuzzable_registers() + ('ALL', ), nargs='+')
     swsmi_subparser.add_argument("infile", help="Mutated input buffer. Set to @@ when running under afl-fuzz")
 
     main(parser.parse_args())
