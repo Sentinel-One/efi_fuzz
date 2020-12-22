@@ -48,6 +48,7 @@ import taint
 import taint.tracker
 import smm.protocols
 import smm.swsmi
+import volume.volume
 
 # for argparse
 auto_int = functools.partial(int, base=0)
@@ -172,6 +173,8 @@ def main(args):
     # Init SMM related protocols
     smm.init(ql, args.mode == 'swsmi')
 
+    volume.volume.install(ql, 'thinkpad_rom.bin')
+
     # Run custom initialization script.
     if args.load_package:
         mod = importlib.import_module(args.load_package)
@@ -191,8 +194,6 @@ def main(args):
         verbose_abort(ql)
 
     os._exit(0)  # that's a looot faster than tidying up.
-
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
