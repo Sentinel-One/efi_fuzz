@@ -1,7 +1,8 @@
-from qiling.os.uefi.const import EFI_UNSUPPORTED
+from qiling.os.uefi.const import EFI_BUFFER_TOO_SMALL, EFI_NOT_FOUND, EFI_SUCCESS, EFI_UNSUPPORTED
 from .efi_firmware_volume2_type import EFI_FIRMWARE_VOLUME2_PROTOCOL
 import ctypes
 from qiling.os.uefi.fncc import *
+from qiling.os.uefi.utils import read_int64, write_int64
 from qiling.os.const import *
 import uefi_firmware
 from enum import Enum
@@ -48,14 +49,18 @@ def hook_ReadFile(ql, address, params):
 
 def get_file(ql, guid):
     for volume in ql.os.firmware_volumes:
-        objects = volume.iterate_objects(False)
-        print(objects)
-        # for fs in volume.firmware_filesystems:
-        #     for file in fs.files:
-        #         if file.type == 0x0b: # EFI_FV_FILETYPE_FIRMWARE_VOLUME_IMAGE
-        #             pass
-        #         else:
+        objects = uefi_firmware.utils.flatten_firmware_objects(volume.iterate_objects())
+        for obj in objects:
+            if obj['guid'] == guid:
+                return obj['_self']
 
+def get_section(fw_file, section_type, section_instance):
+    counter = -1
+    for section in fw_file.sections:
+        if section.type == section_type:
+            counter += 1
+            if counter == section_instance:
+                return section
 
 @dxeapi(params={
     "This": POINTER, #POINTER_T(struct__EFI_SMM_SW_DISPATCH2_PROTOCOL)
@@ -67,25 +72,35 @@ def get_file(ql, guid):
     "AuthenticationStatus": POINTER,
 })
 def hook_ReadSection(ql, address, params):
-    # import ipdb; ipdb.set_trace()
     guid = str(ql.os.read_guid(params["NameGuid"]))
     section_type = params["SectionType"] & 0xFF
-    # print(guid)
-    # import ipdb; ipdb.set_trace()   
-    for volume in ql.os.firmware_volumes:
-        objects = uefi_firmware.utils.flatten_firmware_objects(volume.iterate_objects())
-        # print(len(objects))
-        # import ipdb; ipdb.set_trace()
-        for obj in objects:
-            if obj['guid'] == guid:
-                counter = -1
-                for section in obj['_self'].sections:
-                    if section.type == section_type:
-                        counter += 1
-                        if counter == params["SectionInstance"]:
-                            print(section.data)
-                            import ipdb; ipdb.set_trace()
-    return EFI_UNSUPPORTED
+    
+    fw_file = get_file(ql, guid)
+    if not fw_file:
+        return EFI_NOT_FOUND
+
+    section = get_section(fw_file, section_type, params["SectionInstance"])
+    if not section:
+        return EFI_NOT_FOUND
+
+    buffer = read_int64(ql, params["Buffer"])
+    if buffer == 0:
+        # The output buffer is to be allocated by ReadSection()
+        buffer = ql.os.heap.alloc(len(section.data))
+        ql.mem.write(buffer, section.data)
+        write_int64(ql, params["BufferSize"], len(section.data))    
+        write_int64(ql, params["Buffer"], buffer)
+        return EFI_SUCCESS
+
+    # The output buffer is caller allocated
+    buffer_size = read_int64(ql, params["BufferSize"])
+    if buffer_size < len(section.data):
+        write_int64(ql, params["BufferSize"], len(section.data))
+        return EFI_BUFFER_TOO_SMALL
+
+    write_int64(ql, params["BufferSize"], len(section.data))
+    ql.mem.write(params["Buffer"], section.data)
+    return EFI_SUCCESS
 
 @dxeapi(params={
     "This": POINTER, #POINTER_T(struct__EFI_SMM_SW_DISPATCH2_PROTOCOL)
