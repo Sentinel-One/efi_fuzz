@@ -1,4 +1,5 @@
 import sys
+import time
 import struct
 import pickle
 from qiling import Qiling
@@ -11,11 +12,12 @@ from depex import *
 def notify_after_module_execution(ql, number_of_modules_left):
     ql.nprint(f'*** done with {ql.os.running_module}, {number_of_modules_left}')
     ql.state = ql.save(reg=True, mem=False, cpu_context=True)
+    ql.module_start_time = time.time()
     return False
 
 def check_and_load(ql):
-    unloaded_modules = []
-    for module in ql.os.unloaded_modules:
+    modules_not_yet_loaded = []
+    for module in ql.os.modules_not_yet_loaded:
         if eval_depex(ql, module):
             module_path = dump_pe(module, ql.os.outdir)
             if module_path is None:
@@ -26,25 +28,34 @@ def check_and_load(ql):
                 print(e)
                 print(file.guid, file.guid.hex())
         else:
-            unloaded_modules.append(module)
-    ql.os.unloaded_modules = unloaded_modules
+            modules_not_yet_loaded.append(module)
+    ql.os.modules_not_yet_loaded = modules_not_yet_loaded
 
 def InstallMultipleProtocolInterfaces_onexit(ql, address, params):
     check_and_load(ql)
 def InstallProtocolInterface_onexit(ql, address, params):
     check_and_load(ql)
 
+def restore_state(ql):
+    if ql.state:
+        # Restore the state to the end of the last secessful module.
+        ql.restore(ql.state)
+    else:
+        # first module crash / timeout.
+        ql.reg.arch_pc = ql.loader.end_of_execution_ptr
+    
+    return ql.reg.arch_pc
 
-def run(env, rom_file, volume_guid, outdir):
+def run(env, rom_file, outdir, single_module_timeout):
     build_guid_db()
 
-    bios_region = get_bios_region(rom_file)
-    assert bios_region is not None
+    data = open(rom_file, "rb").read()
+    parser = uefi_firmware.AutoParser(data, True)
+    if parser.type() == 'unknown':
+        return None
+    fv = parser.parse()
 
-    fv = get_firmware_volume(bios_region, volume_guid)
-    assert fv is not None
-
-    apriori_files, unloaded_modules = get_all_files(fv, APRIORI_DXE_GUID)
+    apriori_files, modules_not_yet_loaded = get_all_files(fv, APRIORI_DXE_GUID)
 
     # We are not checking depex for apriori_dxes since EDKII dxecore doesn't and loading PcdDxe late cuases crashes.
     executables = []
@@ -53,8 +64,9 @@ def run(env, rom_file, volume_guid, outdir):
         if fpath is not None: 
             executables.append(fpath)
 
-    ql = Qiling(executables, ".", env=env, output="defualt")
-    ql.os.unloaded_modules = unloaded_modules
+    ql = Qiling(executables, ".", env=env, output="default")
+    ql.state = None
+    ql.os.modules_not_yet_loaded = modules_not_yet_loaded
     ql.os.outdir = outdir
     ql.os.notify_after_module_execution = notify_after_module_execution
     ql.set_api('InstallMultipleProtocolInterfaces', InstallMultipleProtocolInterfaces_onexit, QL_INTERCEPT.EXIT)
@@ -71,6 +83,16 @@ def run(env, rom_file, volume_guid, outdir):
     ql.count = 0
     ql.uc.hook_add(UC_HOOK_INSN, hook_in, ql, 1, 0, UC_X86_INS_IN)
 
+    ql.module_start_time = time.time()
+    def hook_opcode_timeout(ql, address, size):
+        if time.time() - ql.module_start_time > single_module_timeout:
+            ql.nprint(f'*** Module timeout {ql.os.running_module} ***')
+            restore_state(ql)
+            
+    # Hook every opcode.
+    ql.hook_code(hook_opcode_timeout)
+
+
     #TODO: fix bug in qiling ql.os.smm_dispatch is never initialize, but used in smm_sw_dispatch2_protocol.
     ql.os.smm_dispatch = [] #oooops this is a bug in qiling I need to fix
     
@@ -78,21 +100,20 @@ def run(env, rom_file, volume_guid, outdir):
     begin = ql.os.entry_point
     while True:
         try:
-            ql.run(begin=begin, timeout=1000)
+            ql.run(begin=begin)
             break
         except Exception as e:
             if len(ql.loader.modules) < 1:
                 break
-            if not ql.state:
-                break
-            # Restore the state to the end of the last secessful module.
-            ql.restore(ql.state)
-            begin = ql.reg.arch_pc
-    print(f'We didnt load {len(ql.os.unloaded_modules)} modules')
+            begin = restore_state(ql)
+    print(f'We didnt load {len(ql.os.modules_not_yet_loaded)} modules')
 
 
 if __name__ == "__main__":
     env = {}
     with open('rom2_nvar.pickel', 'rb') as f:
         env = pickle.load(f)
-    run(env, 'rom2.bin', '4f1c52d3-d824-4d2a-a2f0-ec40c23c5916', '/tmp')
+    run(env, 'Thinkpad_9E21FD93-9C72-4C15-8C4B-E77F1DB2D792.vol', '/tmp', 20)
+    # run(env, 'AMD_5C60F367-A505-419A-859E-2A4FF6CA6FE5.vol', '/tmp', 20)
+    # run(env, 'Volume_FFSv2_4F1C52D3-D824-4D2A-A2F0-EC40C23C5916.vol', '/tmp', 20)
+    # run(env, 'Dell_OptiPlex_9020M_System_BIOS_DXE.vol', '/tmp', 20)
