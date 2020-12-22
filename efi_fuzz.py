@@ -48,7 +48,7 @@ import taint
 import taint.tracker
 import smm.protocols
 import smm.swsmi
-import volume
+import rom
 
 # for argparse
 auto_int = functools.partial(int, base=0)
@@ -175,7 +175,7 @@ def main(args):
 
     # Init firmware volumes from the provided ROM file.
     if args.rom_file:
-        volume.install(ql, args.rom_file)
+        rom.install(ql, args.rom_file)
 
     # Run custom initialization script.
     if args.load_package:
