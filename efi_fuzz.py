@@ -48,7 +48,7 @@ import taint
 import taint.tracker
 import smm.protocols
 import smm.swsmi
-import volume.volume
+import volume
 
 # for argparse
 auto_int = functools.partial(int, base=0)
@@ -173,7 +173,9 @@ def main(args):
     # Init SMM related protocols
     smm.init(ql, args.mode == 'swsmi')
 
-    volume.volume.install(ql, 'thinkpad_rom.bin')
+    # Init firmware volumes from the provided ROM file.
+    if args.rom_file:
+        volume.install(ql, args.rom_file)
 
     # Run custom initialization script.
     if args.load_package:
@@ -209,6 +211,7 @@ if __name__ == "__main__":
     parser.add_argument("--taint", help="Track uninitialized memory (experimental!)", choices=taint.get_available_tainters().keys(), nargs='+')
     parser.add_argument("-l", "--load-package", help="Load a package to further customize the environment")
     parser.add_argument("-v", "--nvram-file", help="Pickled dictionary containing the NVRAM environment variables")
+    parser.add_argument("-r", "--rom-file", help="Path to the UEFI ROM file")
     parser.add_argument("-x", "--extra-modules", help="Extra modules to load", nargs='+')
 
     subparsers = parser.add_subparsers(help="Fuzzing modes", dest="mode")
