@@ -47,7 +47,7 @@ def hook_SetVolumeAttributes(ql, address, params):
 def hook_ReadFile(ql, address, params):
     return EFI_UNSUPPORTED
 
-def get_file(ql, guid):
+def get_firmware_file(ql, guid):
     for volume in ql.os.firmware_volumes:
         objects = uefi_firmware.utils.flatten_firmware_objects(volume.iterate_objects())
         for obj in objects:
@@ -75,7 +75,7 @@ def hook_ReadSection(ql, address, params):
     guid = str(ql.os.read_guid(params["NameGuid"]))
     section_type = params["SectionType"] & 0xFF
     
-    fw_file = get_file(ql, guid)
+    fw_file = get_firmware_file(ql, guid)
     if not fw_file:
         return EFI_NOT_FOUND
 
@@ -92,14 +92,16 @@ def hook_ReadSection(ql, address, params):
         write_int64(ql, params["Buffer"], buffer)
         return EFI_SUCCESS
 
-    # The output buffer is caller allocated
+    # The output buffer is caller allocated, ...
     buffer_size = read_int64(ql, params["BufferSize"])
     if buffer_size < len(section.data):
+        # But is not big enough
         write_int64(ql, params["BufferSize"], len(section.data))
         return EFI_BUFFER_TOO_SMALL
 
+    # And is big enough
     write_int64(ql, params["BufferSize"], len(section.data))
-    ql.mem.write(params["Buffer"], section.data)
+    ql.mem.write(buffer, section.data)
     return EFI_SUCCESS
 
 @dxeapi(params={
