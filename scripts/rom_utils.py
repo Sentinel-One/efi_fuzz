@@ -3,6 +3,7 @@ import uefi_firmware
 from uefi_firmware.utils import sguid
 from enum import Enum
 import csv
+from depex import *
 
 GUIDS_DB = {}
 
@@ -16,9 +17,7 @@ class EfiSectionType(Enum):
 
 LZMA_CUSTOM_DECOMPRESS_GUID = 'ee4e5898-3914-4259-9d6e-dc7bd79403cf'
 
-modules_to_avoid =  [
-    'd6a2cb7f-6a18-4e2f-b43b-9920a733700a', # DxeCore
-]
+modules_to_avoid =  []
 def get_bios_region(rom_file):
     data = open(rom_file, "rb").read()
     parser = uefi_firmware.AutoParser(data)
@@ -44,20 +43,45 @@ def read_apriori_file(ap):
         apriori_guids.append(guid)
     return apriori_guids
 
-def get_all_files(volume, apriori_guid):
+def get_all_files(node, apriori_guid):
     all_files = []
+    no_dep = []
+    apriori_guids = []
+    apriori_files = []
 
-    for ffs in volume.objects:
-        for file in ffs.files:
-            if file.guid == apriori_guid:
-                apriori_guids = read_apriori_file(file)
-            else:
-                all_files.append(file)
+    for ffs in node.objects:
+        if ffs is None:
+            continue
+        if ffs.type_label == 'FirmwareFileSystem':
+            for file in ffs.files:
+                if file.attrs['type_name'] == 'driver' or file.attrs['type_name'] == 'freeform':
+                    if file.guid == apriori_guid:
+                        apriori_guids = read_apriori_file(file)
+                    else:
+                        if eval_depex(None, file, True):
+                            no_dep.append(file)
+                        else:
+                            all_files.append(file)
+                else:
+                    ap, nap = get_all_files(ffs, apriori_guid)
+                    no_dep.extend(ap)
+                    all_files.extend(nap)
+        else:
+            ap, nap = get_all_files(ffs, apriori_guid)
+            no_dep.extend(ap)
+            all_files.extend(nap)
 
-    apriori_files = [f for f in all_files if f.guid in apriori_guids]
+    if len(apriori_guids) > 0:
+        apriori_files = [f for f in all_files if f.guid in apriori_guids]
+        apriori_files = sorted(apriori_files, key=lambda f: apriori_guids.index(f.guid))
+        none_apriori_files = [f for f in all_files if f.guid not in apriori_guids] 
+    else:
+        none_apriori_files = all_files
+    
+    for dep in no_dep:
+        apriori_files.append(dep)
     # Make sure the apriori files are correctly sorted
-    apriori_files = sorted(apriori_files, key=lambda f: apriori_guids.index(f.guid))
-    none_apriori_files = [f for f in all_files if f.guid not in apriori_guids]
+    
 
     return apriori_files, none_apriori_files
 
@@ -95,3 +119,6 @@ def dump_pe(file, rootfs):
                         return subsection.path
             else:
                 raise ValueError(f"Unrecognized GUID defined section {encapsulated.guid_label}")
+        elif section.type == EfiSectionType.PE32.value:
+                section.dump(fname)
+                return section.path

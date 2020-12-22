@@ -37,25 +37,29 @@ def is_protocol_installed(ql, protocol):
             return True
     return False
 
-def _eval_depex(ql, data):
+def _eval_depex(ql, data, check_for_anything):
     stack = Stack()
 
     offset = 0
     while offset < len(data):
         opcode = ord(data[offset:offset+1])
         offset = offset + 1
-        if opcode == DepexOpcode.PUSH.value:
+        if opcode == DepexOpcode.PUSH.value or opcode == 0 or opcode == 1:
             guid = data[offset:offset+16]
             offset += 16
             stack.push(sguid(guid))
         elif opcode == DepexOpcode.AND.value:
             a = stack.pop()
             b = stack.pop()
+            if check_for_anything:
+                return False
             res = is_protocol_installed(ql, a) and is_protocol_installed(ql, b)
             stack.push(res)
         elif opcode == DepexOpcode.OR.value:
             a = stack.pop()
             b = stack.pop()
+            if check_for_anything:
+                return False
             res = is_protocol_installed(ql, a) or is_protocol_installed(ql, b)
             stack.push(res)
         elif opcode == DepexOpcode.NOT.value:
@@ -71,13 +75,18 @@ def _eval_depex(ql, data):
             assert stack.empty(), "The END opcode was encountered, but the Depex Stack is not empty"
 
             if type(item) == str:
+                if check_for_anything:
+                    return False
                 return is_protocol_installed(ql, item)
             elif type(item) == bool:
                 return item
         else:
+            return False
             assert False, "Unrecognized DepexOpcode"
 
-def eval_depex(ql, file):
+
+
+def eval_depex(ql, file, check_for_anything=False):
     data = None
     for section in file.sections:
         if section.type == 0x13 or section.type == 0x1c:# DXE DEPEX
@@ -85,5 +94,4 @@ def eval_depex(ql, file):
             break
     if data is None:
         return True
-
-    return _eval_depex(ql, data)
+    return _eval_depex(ql, data, check_for_anything)
