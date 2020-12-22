@@ -23,7 +23,12 @@ def hook_SMM_SW_DISPATCH2_Register(ql, address, params):
     "DispatchHandle": POINTER, #POINTER_T(None)
 })
 def hook_SMM_SW_DISPATCH2_UnRegister(ql, address, params):
-    return EFI_SUCCESS
+    try:
+        del ql.os.smm.swsmi_handlers[params['DispatchHandle']]
+    except:
+        return EFI_INVALID_PARAMETER
+    else:
+        return EFI_SUCCESS
 
 def install_EFI_SMM_SW_DISPATCH2_PROTOCOL(ql, start_ptr):
     efi_smm_sw_dispatch2_protocol = EFI_SMM_SW_DISPATCH2_PROTOCOL()
