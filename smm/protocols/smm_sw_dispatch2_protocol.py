@@ -1,3 +1,4 @@
+import random
 from qiling.const import *
 from qiling.os.const import *
 from qiling.os.uefi.utils import *
@@ -15,7 +16,10 @@ pointer_size = ctypes.sizeof(ctypes.c_void_p)
 def hook_SMM_SW_DISPATCH2_Register(ql, address, params):
     # Let's save the dispatch params, so they can be triggered if needed.
     smi_num = int.from_bytes(ql.mem.read(params['RegisterContext'], 8), 'little')
-    ql.os.smm.swsmi_handlers.append((smi_num, params))
+    DispatchHandle = random.getrandbits(64)
+    ql.os.smm.swsmi_handlers.append((DispatchHandle, smi_num, params))
+    write_int64(ql, params["DispatchHandle"], DispatchHandle)
+
     return EFI_SUCCESS
     
 @dxeapi(params={
@@ -23,6 +27,8 @@ def hook_SMM_SW_DISPATCH2_Register(ql, address, params):
     "DispatchHandle": POINTER, #POINTER_T(None)
 })
 def hook_SMM_SW_DISPATCH2_UnRegister(ql, address, params):
+    dh = read_int64(ql, params["DispatchHandle"])
+    ql.os.smm.swsmi_handlers[:] = [tup for tup in ql.os.smm.swsmi_handlers if tup[0] != dh]
     return EFI_SUCCESS
 
 def install_EFI_SMM_SW_DISPATCH2_PROTOCOL(ql, start_ptr):
