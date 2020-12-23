@@ -10,6 +10,7 @@ from qiling.os.uefi.utils import convert_struct_to_bytes, write_int64
 from qiling.os.uefi.const import *
 from ..swsmi import EFI_SMM_SW_CONTEXT, trigger_swsmi
 import ctypes
+import random
 
 def install(ql):
     # Allocate and initialize the protocols buffer
@@ -83,7 +84,15 @@ def install(ql):
         smi_num = 0
         params['RegisterContext'] = 0
         params['DispatchFunction'] = params["Handler"]
-        ql.os.smm.swsmi_handlers.append((smi_num, params))
+        DispatchHandle = random.getrandbits(64)
+        ql.os.smm.swsmi_handlers.append((DispatchHandle, smi_num, params))
+        write_int64(ql, params["DispatchHandle"], DispatchHandle)
+        return EFI_SUCCESS
+    
+    def hook_efi_mm_interrupt_unregister(ql, address, params):
+        dh = read_int64(ql, params["DispatchHandle"])
+        ql.os.smm.swsmi_handlers[:] = [tup for tup in ql.os.smm.swsmi_handlers if tup[0] != dh]
         return EFI_SUCCESS
 
     ql.set_api("mm_interrupt_register", hook_mm_interrupt_register)
+    ql.set_api("efi_mm_interrupt_unregister", hook_efi_mm_interrupt_unregister)

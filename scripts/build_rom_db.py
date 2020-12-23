@@ -8,11 +8,15 @@ from unicorn import *
 from unicorn.x86_const import *
 from rom_utils import *
 from depex import *
+import smm.protocols
 
 def notify_after_module_execution(ql, number_of_modules_left):
     ql.nprint(f'*** done with {ql.os.running_module}, {number_of_modules_left}')
     ql.state = ql.save(reg=True, mem=False, cpu_context=True)
     ql.module_start_time = time.time()
+    for callback in ql.os.after_module_execution_callbacks:
+        if callback(ql, number_of_modules_left):
+            return True
     return False
 
 def check_and_load(ql):
@@ -64,13 +68,17 @@ def run(env, rom_file, outdir, single_module_timeout):
         if fpath is not None: 
             executables.append(fpath)
 
-    ql = Qiling(executables, ".", env=env, output="default")
+    ql = Qiling(executables, ".", env=env, output="default", profile="smm/smm.ini")
     ql.state = None
     ql.os.modules_not_yet_loaded = modules_not_yet_loaded
     ql.os.outdir = outdir
+    ql.os.after_module_execution_callbacks = []
     ql.os.notify_after_module_execution = notify_after_module_execution
     ql.set_api('InstallMultipleProtocolInterfaces', InstallMultipleProtocolInterfaces_onexit, QL_INTERCEPT.EXIT)
     ql.set_api('InstallProtocolInterface', InstallProtocolInterface_onexit, QL_INTERCEPT.EXIT)
+
+    # Init SMM related protocols
+    smm.protocols.init(ql, True)
 
     # HW mappeed memory
     ql.mem.map(0xf8000000, 0x10000000)
@@ -78,7 +86,7 @@ def run(env, rom_file, outdir, single_module_timeout):
     ql.mem.map(0, 0x1000)
 
     def hook_in(uc, port, size, ql):
-        ql.count += 1
+        ql.count += 10000
         return ql.count
     ql.count = 0
     ql.uc.hook_add(UC_HOOK_INSN, hook_in, ql, 1, 0, UC_X86_INS_IN)

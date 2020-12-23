@@ -54,7 +54,7 @@ def get_all_files(node, apriori_guid):
             continue
         if ffs.type_label == 'FirmwareFileSystem':
             for file in ffs.files:
-                if file.attrs['type_name'] == 'driver' or file.attrs['type_name'] == 'freeform':
+                if file.attrs['type_name'] == 'driver' or file.attrs['type_name'] == 'freeform' or file.attrs['type_name'] == 'system management':
                     if file.guid == apriori_guid:
                         apriori_guids = read_apriori_file(file)
                     else:

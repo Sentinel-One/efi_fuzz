@@ -5,8 +5,8 @@ import ctypes
 
 
 def trigger_next_smi_handler(ql):
-    (dispatch_handle, smi_params) = ql.os.smm.swsmi_handlers.popitem()
-    ql.dprint(D_INFO, f"Executing SMI with params {smi_params}")
+    (dispatch_handle, smi_num, smi_params) = ql.os.smm.swsmi_handlers.pop(0)
+    ql.nprint(f"Executing SMI 0x{smi_num:x} with params {smi_params}")
     
     # IN EFI_HANDLE  DispatchHandle
     ql.reg.rcx = dispatch_handle

@@ -21,7 +21,9 @@ smram = 0
 })
 def hook_SMM_SW_DISPATCH_Register(ql, address, params):
     smi_num = int.from_bytes(ql.mem.read(params['RegisterContext'], 8), 'little')
-    ql.os.smm.swsmi_handlers.append((smi_num, params))
+    DispatchHandle = random.getrandbits(64)
+    ql.os.smm.swsmi_handlers.append((DispatchHandle, smi_num, params))
+    write_int64(ql, params["DispatchHandle"], DispatchHandle)
     return EFI_SUCCESS
     
 @dxeapi(params={
@@ -29,6 +31,8 @@ def hook_SMM_SW_DISPATCH_Register(ql, address, params):
     "DispatchHandle": POINTER, #POINTER_T(None)
 })
 def hook_SMM_SW_DISPATCH_UnRegister(ql, address, params):
+    dh = read_int64(ql, params["DispatchHandle"])
+    ql.os.smm.swsmi_handlers[:] = [tup for tup in ql.os.smm.swsmi_handlers if tup[0] != dh]
     return EFI_UNSUPPORTED
 
 def install_EFI_SMM_SW_DISPATCH_PROTOCOL(ql, start_ptr):
