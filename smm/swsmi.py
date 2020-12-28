@@ -1,30 +1,32 @@
 from .save_state_area import create_smm_save_state
-from qiling.os.uefi.utils import convert_struct_to_bytes
+from qiling.os.uefi.utils import convert_struct_to_bytes, write_int64
 from qiling.const import D_INFO
 import ctypes
 
 
-class EFI_SMM_SW_CONTEXT(ctypes.Structure):
-    _fields_ = [
-        ('SwSmiCpuIndex', ctypes.c_uint64),
-        ('CommandPort', ctypes.c_uint8),
-        ('DataPort', ctypes.c_uint8)
-    ]
+
 
 def trigger_next_smi_handler(ql):
-    (smi_num, smi_params) = ql.os.smm.swsmi_handlers.pop(0)
-    ql.dprint(D_INFO, f"Executing SMI 0x{smi_num:x} with params {smi_params}")
+    # breakpoint()
+    (dispatch_handle, smi_params) = ql.os.smm.swsmi_handlers.popitem()
+    ql.dprint(D_INFO, f"Executing SMI with params {smi_params}")
     
-    ql.reg.rcx = smi_params["DispatchHandle"]
-    ql.reg.rdx = smi_params["RegisterContext"]
+    # IN EFI_HANDLE  DispatchHandle
+    ql.reg.rcx = dispatch_handle
 
-    # The CommandPort should correspond to the SMI's number.
-    # See https://github.com/tianocore/edk2/blob/master/MdePkg/Include/Protocol/SmmSwDispatch2.h for more details
-    smm_sw_context = EFI_SMM_SW_CONTEXT(0, smi_num, 0)
+    # IN CONST VOID  *Context         OPTIONAL
+    ql.mem.write(ql.os.smm.register_context, convert_struct_to_bytes(smi_params["RegisterContext"]))
+    ql.reg.rdx = ql.os.smm.register_context
 
-    ql.mem.write(ql.os.smm.comm_buffer, convert_struct_to_bytes(smm_sw_context))
-    ql.reg.r8 = ql.os.smm.comm_buffer  # OUT VOID    *CommBuffer
-    ql.reg.r9 = ql.os.smm.comm_buffer_size # OUT UINTN   *CommBufferSize
+    # IN OUT VOID    *CommBuffer      OPTIONAL
+    ql.mem.write(ql.os.smm.communication_buffer, convert_struct_to_bytes(smi_params["CommunicationBuffer"]))
+    ql.reg.r8 = ql.os.smm.communication_buffer
+
+    # IN OUT UINTN   *CommBufferSize  OPTIONAL
+    size_ptr = ql.os.smm.communication_buffer + ctypes.sizeof(smi_params["CommunicationBuffer"])
+    write_int64(ql, size_ptr, ctypes.sizeof(smi_params["CommunicationBuffer"]))
+    ql.reg.r9 = size_ptr
+    
     ql.reg.rip = smi_params["DispatchFunction"]
     ql.stack_push(ql.loader.end_of_execution_ptr)
     return True
