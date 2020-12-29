@@ -49,9 +49,26 @@ import taint.tracker
 import smm.protocols
 import smm.swsmi
 import rom
+from qiling.os.memory import QlMemoryHeap
 
 # for argparse
 auto_int = functools.partial(int, base=0)
+
+class AutoFillBytesIO(io.BytesIO):
+
+    def __init__(self, initial_bytes, default_val=b'\x00'):
+        super().__init__(initial_bytes)
+        self.default_val = default_val
+
+    def read(self, size=-1):
+        val = super().read(size)
+        if val == b'':
+            val = self.default_val * size
+        return val
+
+def enable_low_heap(ql):
+    heap_base = ql.mem.find_free_space(size = 0x1024 ** 2, max_addr = 0xffffffff)
+    ql.os.low_heap = QlMemoryHeap(ql, heap_base, heap_base + 0x1024 ** 2)
 
 def start_afl(_ql: Qiling, user_data):
     """
@@ -73,10 +90,10 @@ def start_afl(_ql: Qiling, user_data):
         """
         Injects the mutated variable to the emulated NVRAM environment.
         """
-        total_size = len(args.registers) * 8
-        _input = _input.ljust(total_size, b'\x00') # zero padding
+        # total_size = len(args.registers) * 8
+        # _input = _input.ljust(total_size, b'\x00') # zero padding
 
-        stream = io.BytesIO(_input)
+        stream = AutoFillBytesIO(_input)
 
         if 'ALL' in args.registers:
             fuzz_regs = smm.swsmi.fuzzable_registers()
@@ -84,21 +101,31 @@ def start_afl(_ql: Qiling, user_data):
             fuzz_regs = args.registers
 
         for reg in fuzz_regs:
-            _ql.os.smm.swsmi_args[reg] = stream.read(8)
+            reg_type =  int.from_bytes(stream.read(1), 'little') % 2
+            if reg_type == 0:
+                # PTR
+                length = int.from_bytes(stream.read(2), 'little')
+                data = stream.read(length)
+            else:
+                # VAL
+                data = stream.read(8)
+            # breakpoint()
+            _ql.os.smm.swsmi_args[reg] = (reg_type, data)
 
     def validate_crash(uc, err, _input, persistent_round, user_data):
         """
         Informs AFL that a certain condition should be treated as a crash.
         """
-        if args.sanitize and not _ql.os.heap.validate():
-            # Canary was corrupted.
-            verbose_abort(_ql)
-            return True
+        # if args.sanitize and not _ql.os.heap.validate():
+        #     # Canary was corrupted.
+        #     verbose_abort(_ql)
+        #     return True
 
         # Some other internal exception.
         crash = (_ql.internal_exception is not None) or (err.errno != UC_ERR_OK)
         if args.mode == 'swsmi' and (err.errno == UC_ERR_READ_UNMAPPED) or (err.errno == UC_ERR_WRITE_UNMAPPED):
             crash = False
+            # breakpoint()
 
         if crash and args.output == 'debug':
             _ql.os.emu_error()
@@ -132,6 +159,26 @@ def after_module_execution_callback(ql, number_of_modules_left):
     for callback in ql.os.after_module_execution_callbacks:
         callback(ql, number_of_modules_left)
 
+def hook_in(ql, address, size):
+    # breakpoint()
+    # print(address, size)
+    if size == 1:
+        # read 1 byte to AL
+        # ql.reg.al = 0xf1
+        return 0xf1
+    if size == 2:
+        # read 2 byte to AX
+        # ql.reg.ax = 0xf2
+        return 0xf2
+    if size == 4:
+        # read 4 byte to EAX
+        # ql.reg.eax = 0xf4
+        return 0xf4
+    # we should never reach here
+    # print(args)
+    # breakpoint()
+    return 0xff
+
 def main(args):
     enable_trace = args.output != 'off'
 
@@ -148,6 +195,9 @@ def main(args):
                 stderr=1 if enable_trace else None,
                 output=args.output,
                 profile="smm/smm.ini")
+    # breakpoint()
+    ql.hook_insn(hook_in, x86_const.UC_X86_INS_IN)
+    enable_low_heap(ql)
 
     ql.os.after_module_execution_callbacks = []
     ql.os.notify_after_module_execution = after_module_execution_callback

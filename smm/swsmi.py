@@ -39,9 +39,18 @@ def trigger_swsmi(ql, user_data=None):
     saved_regs = ql.reg.save()
 
     # Apply fuzzed registers
-    for (reg, value) in ql.os.smm.swsmi_args.items():
-        ql.reg.write(reg, int.from_bytes(value, 'little'))
-        
+    for (reg, (foo, value)) in ql.os.smm.swsmi_args.items():
+        if foo == 0: # PTR
+            # breakpoint()
+            buff = ql.os.low_heap.alloc(len(value))
+            ql.mem.write(buff, value)
+            ql.reg.write(reg, buff)
+            print(f"*{reg} --> {value[:6]}")
+        else: # VAL
+            ql.reg.write(reg, int.from_bytes(value, 'little'))
+            # print(f"{reg} = {value}")
+    
+
     create_smm_save_state(ql)
 
     # Restore the saved registers, we only want them to be manifested in the SMRAM save state area.
