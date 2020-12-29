@@ -40,6 +40,7 @@ try:
 except ImportError:
     pass
 
+import utils
 from qiling import arch
 from qiling import Qiling
 from unicorn import *
@@ -49,26 +50,9 @@ import taint.tracker
 import smm.protocols
 import smm.swsmi
 import rom
-from qiling.os.memory import QlMemoryHeap
 
 # for argparse
 auto_int = functools.partial(int, base=0)
-
-class AutoFillBytesIO(io.BytesIO):
-
-    def __init__(self, initial_bytes, default_val=b'\x00'):
-        super().__init__(initial_bytes)
-        self.default_val = default_val
-
-    def read(self, size=-1):
-        val = super().read(size)
-        if val == b'':
-            val = self.default_val * size
-        return val
-
-def enable_low_heap(ql):
-    heap_base = ql.mem.find_free_space(size = 0x1024 ** 2, max_addr = 0xffffffff)
-    ql.os.low_heap = QlMemoryHeap(ql, heap_base, heap_base + 0x1024 ** 2)
 
 def start_afl(_ql: Qiling, user_data):
     """
@@ -93,7 +77,7 @@ def start_afl(_ql: Qiling, user_data):
         # total_size = len(args.registers) * 8
         # _input = _input.ljust(total_size, b'\x00') # zero padding
 
-        stream = AutoFillBytesIO(_input)
+        stream = utils.streams.AutoFillBytesIO(_input)
 
         if 'ALL' in args.registers:
             fuzz_regs = smm.swsmi.fuzzable_registers()
@@ -197,7 +181,7 @@ def main(args):
                 profile="smm/smm.ini")
     # breakpoint()
     ql.hook_insn(hook_in, x86_const.UC_X86_INS_IN)
-    enable_low_heap(ql)
+    utils.low_heap.enable_low_heap(ql)
 
     ql.os.after_module_execution_callbacks = []
     ql.os.notify_after_module_execution = after_module_execution_callback
