@@ -1,17 +1,18 @@
-from qiling.os.uefi.runtime import hook_GetVariable, hook_GetNextVariableName, hook_SetVariable, \
-    hook_QueryVariableInfo
-
-from .smm_sw_dispatch_type import EFI_SMM_SW_DISPATCH_PROTOCOL
 from qiling.const import *
 from qiling.os.const import *
 from qiling.os.uefi.const import *
-from .smm_sw_dispatch_type import *
 from qiling.os.uefi.fncc import *
-import ctypes
+from .guids import EFI_SMM_SW_DISPATCH_PROTOCOL_GUID
+from qiling.os.uefi.ProcessorBind import *
+from qiling.os.uefi.UefiBaseType import *
 
-pointer_size = ctypes.sizeof(ctypes.c_void_p)
-
-smram = 0
+class EFI_SMM_SW_DISPATCH_PROTOCOL(STRUCT):
+    EFI_SMM_SW_DISPATCH_PROTOCOL = STRUCT
+    _fields_ = [
+        ('Register', FUNCPTR(EFI_STATUS, PTR(EFI_SMM_SW_DISPATCH_PROTOCOL), PTR(VOID), PTR(VOID), PTR(VOID))),
+        ('UnRegister', FUNCPTR(EFI_STATUS, PTR(EFI_SMM_SW_DISPATCH_PROTOCOL), PTR(VOID))),
+        ('MaximumSwiValue', UINT64)
+    ]
 
 @dxeapi(params={
     "This": POINTER, #POINTER_T(struct__EFI_SMM_SW_DISPATCH2_PROTOCOL)
@@ -35,18 +36,14 @@ def hook_SMM_SW_DISPATCH_UnRegister(ql, address, params):
     ql.os.smm.swsmi_handlers[:] = [tup for tup in ql.os.smm.swsmi_handlers if tup[0] != dh]
     return EFI_UNSUPPORTED
 
-def install_EFI_SMM_SW_DISPATCH_PROTOCOL(ql, start_ptr):
-    efi_smm_sw_dispatch_protocol = EFI_SMM_SW_DISPATCH_PROTOCOL()
-    ptr = start_ptr + ctypes.sizeof(EFI_SMM_SW_DISPATCH_PROTOCOL)
-    pointer_size = 8
-
-    efi_smm_sw_dispatch_protocol.Register = ptr
-    ql.hook_address(hook_SMM_SW_DISPATCH_Register, ptr)
-    ptr += pointer_size
-
-    efi_smm_sw_dispatch_protocol.UnRegister = ptr
-    ql.hook_address(hook_SMM_SW_DISPATCH_UnRegister, ptr)
-    ptr += pointer_size
-
-    return (ptr, efi_smm_sw_dispatch_protocol)
-
+def install_EFI_SMM_SW_DISPATCH_PROTOCOL(ql):
+    descriptor = {
+        'guid'   : EFI_SMM_SW_DISPATCH_PROTOCOL_GUID,
+        'struct' : EFI_SMM_SW_DISPATCH_PROTOCOL,
+        'fields' : (
+            ('Register',        hook_SMM_SW_DISPATCH_Register),
+            ('UnRegister',      hook_SMM_SW_DISPATCH_UnRegister),
+            ('MaximumSwiValue', None)
+        )
+    }
+    ql.loader.smm_context.install_protocol(descriptor, 1)

@@ -1,12 +1,18 @@
-from .smm_sx_dispatch_type import EFI_SMM_SX_DISPATCH_PROTOCOL
 from qiling.const import *
 from qiling.os.const import *
 from qiling.os.uefi.const import *
-from .smm_sx_dispatch_type import *
 from qiling.os.uefi.fncc import *
-import ctypes
+from .guids import EFI_SMM_SX_DISPATCH_PROTOCOL_GUID
+from qiling.os.uefi.ProcessorBind import *
+from qiling.os.uefi.UefiBaseType import *
 
-pointer_size = ctypes.sizeof(ctypes.c_void_p)
+class EFI_SMM_SX_DISPATCH_PROTOCOL(STRUCT):
+    EFI_SMM_SX_DISPATCH_PROTOCOL = STRUCT
+    _fields_ = [
+        ('Register', FUNCPTR(EFI_STATUS, PTR(EFI_SMM_SX_DISPATCH_PROTOCOL), PTR(VOID), PTR(VOID), PTR(EFI_HANDLE))),
+        ('UnRegister', FUNCPTR(EFI_STATUS, PTR(EFI_SMM_SX_DISPATCH_PROTOCOL), EFI_HANDLE))
+    ]
+
 
 @dxeapi(params={
     "This": POINTER, #POINTER_T(struct__EFI_SMM_SX_DISPATCH2_PROTOCOL)
@@ -24,18 +30,14 @@ def hook_SMM_SX_DISPATCH_Register(ql, address, params):
 def hook_SMM_SX_DISPATCH_UnRegister(ql, address, params):
     return EFI_UNSUPPORTED
 
-def install_EFI_SMM_SX_DISPATCH_PROTOCOL(ql, start_ptr):
-    efi_smm_sx_dispatch_protocol = EFI_SMM_SX_DISPATCH_PROTOCOL()
-    ptr = start_ptr + ctypes.sizeof(EFI_SMM_SX_DISPATCH_PROTOCOL)
-    pointer_size = 8
-
-    efi_smm_sx_dispatch_protocol.Register = ptr
-    ql.hook_address(hook_SMM_SX_DISPATCH_Register, ptr)
-    ptr += pointer_size
-
-    efi_smm_sx_dispatch_protocol.UnRegister = ptr
-    ql.hook_address(hook_SMM_SX_DISPATCH_UnRegister, ptr)
-    ptr += pointer_size
-
-    return (ptr, efi_smm_sx_dispatch_protocol)
+def install_EFI_SMM_SX_DISPATCH_PROTOCOL(ql):
+    descriptor = {
+        'guid'   : EFI_SMM_SX_DISPATCH_PROTOCOL_GUID,
+        'struct' : EFI_SMM_SX_DISPATCH_PROTOCOL,
+        'fields' : (
+            ('Register',        hook_SMM_SX_DISPATCH_Register),
+            ('UnRegister',      hook_SMM_SX_DISPATCH_UnRegister)
+        )
+    }
+    ql.loader.smm_context.install_protocol(descriptor, 1)
 

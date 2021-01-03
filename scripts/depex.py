@@ -32,7 +32,11 @@ def is_protocol_installed(ql, protocol):
     if type(protocol) == bool:
         return protocol
 
-    for handle, guid_dic in ql.loader.handle_dict.items():
+    for handle, guid_dic in ql.loader.dxe_context.protocols.items():
+        if protocol in guid_dic:
+            return True
+
+    for handle, guid_dic in ql.loader.smm_context.protocols.items():
         if protocol in guid_dic:
             return True
     return False
