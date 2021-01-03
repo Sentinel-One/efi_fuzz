@@ -2,9 +2,23 @@ from qiling.const import *
 from qiling.os.const import *
 from qiling.os.uefi.const import *
 from qiling.os.uefi.utils import *
-from .smm_base_type import *
 from qiling.os.uefi.fncc import *
-import ctypes
+from .guids import EFI_SMM_BASE_PROTOCOL_GUID
+from qiling.os.uefi.ProcessorBind import *
+from qiling.os.uefi.UefiBaseType import *
+
+class EFI_SMM_BASE_PROTOCOL(STRUCT):
+    EFI_SMM_BASE_PROTOCOL = STRUCT
+    _fields_ = [
+        ('Register', FUNCPTR(EFI_STATUS, PTR(EFI_SMM_BASE_PROTOCOL), PTR(VOID), PTR(VOID), PTR(VOID), PTR(VOID), PTR(VOID))),
+        ('UnRegister', FUNCPTR(EFI_STATUS, PTR(EFI_SMM_BASE_PROTOCOL), PTR(VOID), PTR(VOID), PTR(VOID))),
+        ('Communicate', FUNCPTR(EFI_STATUS, PTR(EFI_SMM_BASE_PROTOCOL), PTR(VOID), PTR(VOID), PTR(VOID))),
+        ('RegisterCallback', FUNCPTR(EFI_STATUS, PTR(EFI_SMM_BASE_PROTOCOL), PTR(VOID), PTR(VOID), UINT64, UINT64)),
+        ('InSmm', FUNCPTR(EFI_STATUS, PTR(EFI_SMM_BASE_PROTOCOL), PTR(VOID))),
+        ('SmmAllocatePool', FUNCPTR(EFI_STATUS, PTR(EFI_SMM_BASE_PROTOCOL), UINT64, UINT64, PTR(VOID))),
+        ('SmmFreePool', FUNCPTR(EFI_STATUS, PTR(EFI_SMM_BASE_PROTOCOL), PTR(VOID))),
+        ('GetSmstLocation', FUNCPTR(EFI_STATUS, PTR(EFI_SMM_BASE_PROTOCOL), PTR(VOID))),
+    ]
 
 
 @dxeapi(params={
@@ -83,56 +97,21 @@ def hook_UnRegister(ql, address, params):
 def hook_Register(ql, address, params):
     return EFI_SUCCESS
 
-def install_EFI_SMM_BASE_PROTOCOL(ql, start_ptr):
-    efi_smm_base_protocol = EFI_SMM_BASE_PROTOCOL()
-    ptr = start_ptr + ctypes.sizeof(EFI_SMM_BASE_PROTOCOL)
-    pointer_size = 8
-    
-    efi_smm_base_protocol.Register = ptr
-    ql.hook_address(hook_Register, ptr)
-    ptr += pointer_size
+def install_EFI_SMM_BASE_PROTOCOL(ql):
+    descriptor = {
+        'guid'   : EFI_SMM_BASE_PROTOCOL_GUID,
+        'struct' : EFI_SMM_BASE_PROTOCOL,
+        'fields' : (
+            ('Register',            hook_Register),
+            ('UnRegister',          hook_UnRegister),
+            ('Communicate',         hook_Communicate),
+            ('RegisterCallback',    hook_RegisterCallback),
+            ('InSmm',               hook_InSmm),
+            ('SmmAllocatePool',     hook_SmmAllocatePool),
+            ('SmmFreePool',         hook_SmmFreePool),
+            ('GetSmstLocation',     hook_GetSmstLocation)
+        )
+    }
+    ql.loader.smm_context.install_protocol(descriptor, 1)
 
-    efi_smm_base_protocol.UnRegister = ptr
-    ql.hook_address(hook_UnRegister, ptr)
-    ptr += pointer_size
-
-    efi_smm_base_protocol.Communicate = ptr
-    ql.hook_address(hook_Communicate, ptr)
-    ptr += pointer_size
-
-    efi_smm_base_protocol.RegisterCallback = ptr
-    ql.hook_address(hook_RegisterCallback, ptr)
-    ptr += pointer_size
-
-    efi_smm_base_protocol.InSmm = ptr
-    ql.hook_address(hook_InSmm, ptr)
-    ptr += pointer_size
-
-    efi_smm_base_protocol.SmmAllocatePool = ptr
-    ql.hook_address(hook_SmmAllocatePool, ptr)
-    ptr += pointer_size
-
-    efi_smm_base_protocol.SmmFreePool = ptr
-    ql.hook_address(hook_SmmFreePool, ptr)
-    ptr += pointer_size
-
-    efi_smm_base_protocol.GetSmstLocation = ptr
-    ql.hook_address(hook_GetSmstLocation, ptr)
-    ptr += pointer_size
-
-    # mm_system_table functions
-    # efi_mm_system_table.MmStartupThisAp = ptr
-    # ql.hook_address(hook_mm_startup_this_ap, ptr)
-    # ptr += pointer_size
-    # efi_mm_system_table.MmiManage = ptr
-    # ql.hook_address(hook_mm_interrupt_manage, ptr)
-    # ptr += pointer_size
-    # efi_mm_system_table.MmiHandlerRegister = ptr
-    # ql.hook_address(hook_mm_interrupt_register, ptr)
-    # ptr += pointer_size
-    # efi_mm_system_table.MmiHandlerUnRegister = ptr
-    # ql.hook_address(hook_efi_mm_interrupt_unregister, ptr)
-    # ptr += pointer_size
-
-    return (ptr, efi_smm_base_protocol)
 
