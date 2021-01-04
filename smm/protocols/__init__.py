@@ -3,9 +3,11 @@ from .smm_sw_dispatch2_protocol import install_EFI_SMM_SW_DISPATCH2_PROTOCOL
 from .smm_sx_dispatch_protocol import install_EFI_SMM_SX_DISPATCH_PROTOCOL
 from .smm_base_protocol import install_EFI_SMM_BASE_PROTOCOL
 from .smm_variable_protocol import install_EFI_SMM_VARIABLE_PROTOCOL
-from .smm_access_protocol import install_EFI_SMM_ACCESS_PROTOCOL
+from .smm_cpu_protocol import init_EFI_SMM_CPU_PROTOCOL
+from .mm_access_protocol import init_GetCapabilities
 from .guids import *
 from qiling.os.uefi.const import *
+from qiling.os.uefi.utils import ptr_write64, ptr_read64
 from ..swsmi import EFI_SMM_SW_CONTEXT, trigger_swsmi
 import ctypes
 import random
@@ -34,12 +36,7 @@ def init(ql, in_smm=False):
 
     ql.os.smm = SmmState(ql)
 
-    def hook_InSmm(ql, address, params):
-        nonlocal in_smm
-        write_int64(ql, params["InSmram"], in_smm)
-
-    # Replace 'InSmm' to correctly report whether or not we're executing an SMM module.
-    ql.set_api("InSmm", hook_InSmm)
+    ql.loader.in_smm = in_smm
 
     def after_module_execution_callback(ql, number_of_modules_left):
         if number_of_modules_left == 0:
@@ -48,6 +45,7 @@ def init(ql, in_smm=False):
 
     ql.os.after_module_execution_callbacks.append(after_module_execution_callback)
     
+    init_EFI_SMM_CPU_PROTOCOL(ql)
     init_GetCapabilities(ql)
 
     def hook_mm_interrupt_register(ql, address, params):
@@ -56,11 +54,11 @@ def init(ql, in_smm=False):
         params['DispatchFunction'] = params["Handler"]
         DispatchHandle = random.getrandbits(64)
         ql.os.smm.swsmi_handlers.append((DispatchHandle, smi_num, params))
-        write_int64(ql, params["DispatchHandle"], DispatchHandle)
+        ptr_write64(ql, params["DispatchHandle"], DispatchHandle)
         return EFI_SUCCESS
     
     def hook_efi_mm_interrupt_unregister(ql, address, params):
-        dh = read_int64(ql, params["DispatchHandle"])
+        dh = ptr_read64(ql, params["DispatchHandle"])
         ql.os.smm.swsmi_handlers[:] = [tup for tup in ql.os.smm.swsmi_handlers if tup[0] != dh]
         return EFI_SUCCESS
 

@@ -5,6 +5,7 @@ from qiling.os.uefi.fncc import *
 from .guids import EFI_SMM_SW_DISPATCH_PROTOCOL_GUID
 from qiling.os.uefi.ProcessorBind import *
 from qiling.os.uefi.UefiBaseType import *
+from qiling.os.uefi.utils import ptr_write64, ptr_read64
 
 class EFI_SMM_SW_DISPATCH_PROTOCOL(STRUCT):
     EFI_SMM_SW_DISPATCH_PROTOCOL = STRUCT
@@ -24,7 +25,7 @@ def hook_SMM_SW_DISPATCH_Register(ql, address, params):
     smi_num = int.from_bytes(ql.mem.read(params['RegisterContext'], 8), 'little')
     DispatchHandle = random.getrandbits(64)
     ql.os.smm.swsmi_handlers.append((DispatchHandle, smi_num, params))
-    write_int64(ql, params["DispatchHandle"], DispatchHandle)
+    ptr_write64(ql, params["DispatchHandle"], DispatchHandle)
     return EFI_SUCCESS
     
 @dxeapi(params={
@@ -32,7 +33,7 @@ def hook_SMM_SW_DISPATCH_Register(ql, address, params):
     "DispatchHandle": POINTER, #POINTER_T(None)
 })
 def hook_SMM_SW_DISPATCH_UnRegister(ql, address, params):
-    dh = read_int64(ql, params["DispatchHandle"])
+    dh = ptr_read64(ql, params["DispatchHandle"])
     ql.os.smm.swsmi_handlers[:] = [tup for tup in ql.os.smm.swsmi_handlers if tup[0] != dh]
     return EFI_UNSUPPORTED
 

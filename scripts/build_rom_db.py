@@ -9,6 +9,7 @@ from unicorn.x86_const import *
 from rom_utils import *
 from depex import *
 import smm.protocols
+import lib.oem.phoenix
 
 def notify_after_module_execution(ql, number_of_modules_left):
     ql.nprint(f'*** done with {ql.os.running_module}, {number_of_modules_left}')
@@ -79,9 +80,8 @@ def run(env, rom_file, outdir, single_module_timeout):
 
     # Init SMM related protocols
     smm.protocols.init(ql, True)
+    lib.oem.phoenix.run(ql)
 
-    # HW mappeed memory
-    ql.mem.map(0xf8000000, 0x10000000)
     # mapping the zero page, some modules read uninitialized data and use the IN instruction and get the worng reply...
     ql.mem.map(0, 0x1000)
 
@@ -121,7 +121,7 @@ if __name__ == "__main__":
     env = {}
     with open('rom2_nvar.pickel', 'rb') as f:
         env = pickle.load(f)
-    run(env, 'Thinkpad_9E21FD93-9C72-4C15-8C4B-E77F1DB2D792.vol', '/tmp', 20)
+    run(env, 'Thinkpad_9E21FD93-9C72-4C15-8C4B-E77F1DB2D792.vol', '/tmp', 5)
     # run(env, 'AMD_5C60F367-A505-419A-859E-2A4FF6CA6FE5.vol', '/tmp', 20)
     # run(env, 'Volume_FFSv2_4F1C52D3-D824-4D2A-A2F0-EC40C23C5916.vol', '/tmp', 20)
     # run(env, 'Dell_OptiPlex_9020M_System_BIOS_DXE.vol', '/tmp', 20)

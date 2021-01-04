@@ -26,7 +26,7 @@ class EFI_SMM_BASE_PROTOCOL(STRUCT):
     "InSmram": POINTER, #POINTER_T(ctypes.c_ubyte)
 })
 def hook_InSmm(ql, address, params):
-    write_int64(ql, params["InSmram"], 1)
+    ptr_write64(ql, params["InSmram"], 1)
     return EFI_SUCCESS
 
 @dxeapi(params={
@@ -36,7 +36,7 @@ def hook_InSmm(ql, address, params):
 def hook_GetSmstLocation(ql, address, params):
     if params["Smst"] == 0:
         return EFI_INVALID_PARAMETER
-    write_int64(ql, params["Smst"], ql.loader.mm_system_table_ptr)
+    ptr_write64(ql, params["Smst"], ql.loader.mm_system_table_ptr)
     return EFI_SUCCESS
 
 
