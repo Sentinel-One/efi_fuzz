@@ -5,6 +5,8 @@ from qiling.os.uefi.fncc import *
 from .guids import EFI_SMM_SW_DISPATCH2_PROTOCOL_GUID
 from qiling.os.uefi.ProcessorBind import *
 from qiling.os.uefi.UefiBaseType import *
+from qiling.os.uefi.const import *
+from qiling.os.uefi.utils import ptr_write64, ptr_read64
 
 class EFI_SMM_SW_DISPATCH2_PROTOCOL(STRUCT):
     EFI_SMM_SW_DISPATCH2_PROTOCOL = STRUCT
@@ -68,7 +70,8 @@ def hook_SMM_SW_DISPATCH2_Register(ql, address, params):
     smi_num = int.from_bytes(ql.mem.read(params['RegisterContext'], 8), 'little')
     DispatchHandle = random.getrandbits(64)
     ql.os.smm.swsmi_handlers.append((DispatchHandle, smi_num, params))
-    write_int64(ql, params["DispatchHandle"], DispatchHandle)
+    ptr_write64(ql, params["DispatchHandle"], DispatchHandle)
+
     return EFI_SUCCESS
     
 @dxeapi(params={
@@ -76,29 +79,10 @@ def hook_SMM_SW_DISPATCH2_Register(ql, address, params):
     "DispatchHandle": POINTER, #POINTER_T(None)
 })
 def hook_SMM_SW_DISPATCH2_UnRegister(ql, address, params):
-    dh = read_int64(ql, params["DispatchHandle"])
+    dh = ptr_read64(ql, params["DispatchHandle"])
     ql.os.smm.swsmi_handlers[:] = [tup for tup in ql.os.smm.swsmi_handlers if tup[0] != dh]
     return EFI_SUCCESS
 
-<<<<<<< HEAD
-def install_EFI_SMM_SW_DISPATCH2_PROTOCOL(ql, start_ptr):
-    efi_smm_sw_dispatch2_protocol = EFI_SMM_SW_DISPATCH2_PROTOCOL()
-    ptr = start_ptr
-    pointer_size = 8
-
-    efi_smm_sw_dispatch2_protocol.Register = ptr
-    ql.hook_address(hook_SMM_SW_DISPATCH2_Register, ptr)
-    ptr += pointer_size
-
-    efi_smm_sw_dispatch2_protocol.UnRegister = ptr
-    ql.hook_address(hook_SMM_SW_DISPATCH2_UnRegister, ptr)
-    ptr += pointer_size
-
-    efi_smm_sw_dispatch2_protocol.MaximumSwiValue = 0xFF
-    ptr += pointer_size
-
-    return (ptr, efi_smm_sw_dispatch2_protocol)
-=======
 def install_EFI_SMM_SW_DISPATCH2_PROTOCOL(ql):
     descriptor = {
         'guid'   : EFI_SMM_SW_DISPATCH2_PROTOCOL_GUID,
@@ -110,5 +94,4 @@ def install_EFI_SMM_SW_DISPATCH2_PROTOCOL(ql):
         )
     }
     ql.loader.smm_context.install_protocol(descriptor, 1)
->>>>>>> 199539f (Initial version, not everything is tested yet.)
 

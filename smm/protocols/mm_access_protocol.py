@@ -1,4 +1,6 @@
 from qiling.os.uefi.ProcessorBind import STRUCT, UINT64
+from qiling.os.uefi.utils import ptr_write64
+from qiling.os.uefi.const import *
 
 class EFI_MMRAM_DESCRIPTOR(STRUCT):
     _fields_ = [
@@ -17,9 +19,9 @@ EFI_NEEDS_ECC_INITIALIZATION = 0x00000040
 
 def hook_GetCapabilities(ql, address, params):
     
-    write_int64(ql, params["MmramMapSize"], ql.os.get_capabilities_info_size)
+    ptr_write64(ql, params["MmramMapSize"], ql.os.get_capabilities_info_size)
     if params['MmramMap'] != 0:
-        write_int64(ql, params['MmramMap'], ql.os.get_capabilities_info)
+        ptr_write64(ql, params['MmramMap'], ql.os.get_capabilities_info)
         return EFI_SUCCESS
     return EFI_BUFFER_TOO_SMALL
 

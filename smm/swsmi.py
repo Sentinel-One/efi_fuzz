@@ -25,8 +25,11 @@ def trigger_next_smi_handler(ql):
     # The CommandPort should correspond to the SMI's number.
     # See https://github.com/tianocore/edk2/blob/master/MdePkg/Include/Protocol/SmmSwDispatch2.h for more details
     
-    smm_sw_context = EFI_SMM_SW_CONTEXT(0, smi_num, 0)
-    smm_sw_context.saveTo(ql.os.smm.comm_buffer)
+    smm_sw_context = EFI_SMM_SW_CONTEXT()
+    smm_sw_context.SwSmiCpuIndex = 0
+    smm_sw_context.CommandPort = smi_num
+    smm_sw_context.DataPort = 0
+    smm_sw_context.saveTo(ql, ql.os.smm.comm_buffer)
 
     ql.reg.r8 = ql.os.smm.comm_buffer  # OUT VOID    *CommBuffer
     ql.reg.r9 = ql.os.smm.comm_buffer_size # OUT UINTN   *CommBufferSize

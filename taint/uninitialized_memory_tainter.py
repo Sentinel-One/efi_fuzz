@@ -1,7 +1,7 @@
 from .base_tainter import base_tainter
 from qiling.const import *
 import os
-from qiling.os.uefi.utils import read_int64
+from qiling.os.uefi.utils import ptr_read64
 
 import capstone
 from capstone.x86_const import *
@@ -30,7 +30,7 @@ def AllocatePool_propagate_taint(ql, address, params):
     tePool().
     We know that all pool memory is initially uninitialized, so we taint it.
     """
-    begin = read_int64(ql, params['Buffer'])
+    begin = ptr_read64(ql, params['Buffer'])
     end = begin + params['Size']
     ql.tainters['uninitialized'].set_taint_range(begin, end, True)
 
@@ -40,7 +40,7 @@ def GetVariable_propagate_taint(ql, address, params):
     initialized, so the target buffer becomes untainted.
     """
     begin = params['Data']
-    end = begin + read_int64(ql, params['DataSize'])
+    end = begin + ptr_read64(ql, params['DataSize'])
     ql.tainters['uninitialized'].set_taint_range(begin, end, False)
 
 def SetVariable_propagate_taint(ql, address, params):
