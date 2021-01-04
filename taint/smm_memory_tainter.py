@@ -24,7 +24,7 @@ class smm_memory_tainter(base_tainter):
     def compute_effective_address(ql, operand):
         
         assert operand.type == capstone.CS_OP_MEM
-        assert operand.access == capstone.CS_AC_WRITE
+        assert operand.access & capstone.CS_AC_WRITE
 
         base = ql.reg.read(ql.reg.reverse_mapping[operand.mem.base])
 
@@ -43,7 +43,7 @@ class smm_memory_tainter(base_tainter):
 
         # Destination is not a memory location
         destination = instruction.operands[0]
-        if destination.type != capstone.CS_OP_MEM or destination.access != capstone.CS_AC_WRITE:
+        if destination.type != capstone.CS_OP_MEM or not (destination.access & capstone.CS_AC_WRITE):
             return
 
         address = self.compute_effective_address(ql, destination)
