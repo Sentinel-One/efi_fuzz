@@ -60,6 +60,7 @@ class smm_memory_tainter(base_tainter):
         if self.triton_ctx.isRegisterTainted(triton_base_reg):
             ql.dprint(D_INFO, "***")
             ql.dprint(D_INFO, "Detected a write to SMRAM with attacker-controllable address!")
+            ql.dprint(D_INFO, instruction)
             ql.dprint(D_INFO, "***")
             ql.os.emu_error()
             os.abort()
