@@ -64,6 +64,9 @@ class struct__EFI_SMM_SW_DISPATCH2_PROTOCOL(ctypes.Structure):
 class struct_EFI_SMM_SW_REGISTER_CONTEXT(ctypes.Structure):
     pass
 
+class struct_EFI_SMM_SW_CONTEXT(ctypes.Structure):
+    pass
+
 struct__EFI_SMM_SW_DISPATCH2_PROTOCOL._pack_ = True # source:False
 struct__EFI_SMM_SW_DISPATCH2_PROTOCOL._functions_ = []
 struct__EFI_SMM_SW_DISPATCH2_PROTOCOL._fields_ = [
@@ -88,11 +91,23 @@ EFI_SMM_HANDLER_ENTRY_POINT2 = POINTER_T(ctypes.CFUNCTYPE(ctypes.c_uint64, POINT
 struct_EFI_SMM_SW_REGISTER_CONTEXT._pack_ = True # source:False
 struct_EFI_SMM_SW_REGISTER_CONTEXT._functions_ = []
 struct_EFI_SMM_SW_REGISTER_CONTEXT._fields_ = [
-    ('SwSmiInputValue', ctypes.c_uint64),
+    ('SwSmiInputValue', UINTN),
 ]
 
 EFI_SMM_SW_REGISTER_CONTEXT = struct_EFI_SMM_SW_REGISTER_CONTEXT
 PEFI_SMM_SW_REGISTER_CONTEXT = POINTER_T(struct_EFI_SMM_SW_REGISTER_CONTEXT)
+
+struct_EFI_SMM_SW_CONTEXT._pack_ = True # source:False
+struct_EFI_SMM_SW_CONTEXT._functions_ = []
+struct_EFI_SMM_SW_CONTEXT._fields_ = [
+    ('SwSmiCpuIndex', UINTN),
+    ('CommandPort', UINT8),
+    ('DataPort', UINT8)
+]
+
+EFI_SMM_SW_CONTEXT = struct_EFI_SMM_SW_CONTEXT
+PEFI_SMM_SW_CONTEXT = POINTER_T(struct_EFI_SMM_SW_CONTEXT)
+
 EFI_SMM_SW_REGISTER2 = POINTER_T(ctypes.CFUNCTYPE(ctypes.c_uint64, POINTER_T(struct__EFI_SMM_SW_DISPATCH2_PROTOCOL), POINTER_T(ctypes.CFUNCTYPE(ctypes.c_uint64, POINTER_T(None), POINTER_T(None), POINTER_T(None), POINTER_T(ctypes.c_uint64))), POINTER_T(struct_EFI_SMM_SW_REGISTER_CONTEXT), POINTER_T(POINTER_T(None))))
 EFI_SMM_SW_UNREGISTER2 = POINTER_T(ctypes.CFUNCTYPE(ctypes.c_uint64, POINTER_T(struct__EFI_SMM_SW_DISPATCH2_PROTOCOL), POINTER_T(None)))
 __all__ = \
@@ -101,6 +116,7 @@ __all__ = \
     'EFI_SMM_SW_REGISTER2', 'EFI_SMM_SW_REGISTER_CONTEXT',
     'EFI_SMM_SW_UNREGISTER2', 'EFI_STATUS', 'ImageBaseOffset32',
     'PEFI_SMM_SW_REGISTER_CONTEXT', 'P_EFI_SMM_SW_DISPATCH2_PROTOCOL',
+    'EFI_SMM_SW_CONTEXT', 'PEFI_SMM_SW_CONTEXT',
     'RETURN_STATUS', 'UINT8', 'UINT64', 'UINTN',
     '_EFI_SMM_SW_DISPATCH2_PROTOCOL', 'byte', 'dword', 'longlong',
     'qword', 'struct_EFI_SMM_SW_REGISTER_CONTEXT',
