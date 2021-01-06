@@ -43,5 +43,6 @@ def install_EFI_SMM_SW_DISPATCH2_PROTOCOL(ql, start_ptr):
     ql.hook_address(hook_SMM_SW_DISPATCH2_UnRegister, ptr)
     ptr += pointer_size
 
+    efi_smm_sw_dispatch2_protocol.MaximumSwiValue = 0xFF
     return (ptr, efi_smm_sw_dispatch2_protocol)
 
