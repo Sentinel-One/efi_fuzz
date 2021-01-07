@@ -138,18 +138,21 @@ def main(args):
     else:
         extra_modules = args.extra_modules
 
+    # Load NVRAM environment.
+    if args.nvram_file:
+        with open(args.nvram_file, 'rb') as fh:
+            env = pickle.load(fh)
+    else:
+        env = {}
+
     ql = Qiling(extra_modules + [args.target],
                 ".",                                        # rootfs
                 console=True if enable_trace else False,
                 stdout=1 if enable_trace else None,
                 stderr=1 if enable_trace else None,
                 output=args.output,
-                profile="smm/smm.ini")
-
-    # Load NVRAM environment.
-    if args.nvram_file:
-        with open(args.nvram_file, 'rb') as f:
-            ql.env = pickle.load(f)
+                profile="smm/smm.ini",
+                env=env)
 
     # Setup callbacks.
     callbacks.set_after_module_execution_callback(ql)
