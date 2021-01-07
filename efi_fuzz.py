@@ -49,6 +49,7 @@ import taint.tracker
 import smm.protocols
 import smm.swsmi
 import rom
+import callbacks
 
 # for argparse
 auto_int = functools.partial(int, base=0)
@@ -128,10 +129,6 @@ def start_afl(_ql: Qiling, user_data):
         if ex != unicornafl.UC_AFL_RET_CALLED_TWICE:
             raise
 
-def after_module_execution_callback(ql, number_of_modules_left):
-    for callback in ql.os.after_module_execution_callbacks:
-        callback(ql, number_of_modules_left)
-
 def main(args):
     enable_trace = args.output != 'off'
 
@@ -149,13 +146,18 @@ def main(args):
                 output=args.output,
                 profile="smm/smm.ini")
 
-    ql.os.after_module_execution_callbacks = []
-    ql.os.notify_after_module_execution = after_module_execution_callback
-
     # Load NVRAM environment.
     if args.nvram_file:
         with open(args.nvram_file, 'rb') as f:
             ql.env = pickle.load(f)
+
+    # Setup callbacks.
+    callbacks.set_after_module_execution_callback(ql)
+
+    if args.end:
+        end = callbacks.set_end_of_execution_callback(ql, args.end)
+    else:
+        end = None
 
     # The last loaded image is the main module we're interested in fuzzing
     pe = pefile.PE(args.target, fast_load=True)
@@ -190,7 +192,7 @@ def main(args):
 
     # okay, ready to roll.
     try:
-        ql.run(end=args.end, timeout=args.timeout)
+        ql.run(end=end, timeout=args.timeout)
     except Exception as ex:
         # Probable Unicorn memory error. Treat as crash.
         verbose_abort(ql)
