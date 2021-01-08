@@ -39,15 +39,23 @@ def hook_GetCapabilities(ql, address, params):
 def install_EFI_SMM_ACCESS_PROTOCOL(ql, start_ptr):
 
     def init_GetCapabilities(ql):
-        number_of_map_info_entries = 1 # We only support one smram region
+        number_of_map_info_entries = 2 # We only support two SMRAM region
         struct_size = sizeof(EFI_MMRAM_DESCRIPTOR)
         ql.os.smm.get_capabilities_info_size = number_of_map_info_entries * struct_size
         ql.os.smm.get_capabilities_info  = ql.os.heap.alloc(ql.os.smm.get_capabilities_info_size)
-        efi_mmram_descriptor = EFI_MMRAM_DESCRIPTOR()
-        efi_mmram_descriptor.PhysicalStart = ql.os.smm.smbase
-        efi_mmram_descriptor.CpuStart = ql.os.smm.smbase
-        efi_mmram_descriptor.PhysicalSize = ql.os.smm.smram_size
-        efi_mmram_descriptor.RegionState = EFI_SMRAM_STATE.EFI_ALLOCATED
+
+        efi_mmram_descriptor = (EFI_MMRAM_DESCRIPTOR * number_of_map_info_entries)()
+        # CSEG
+        efi_mmram_descriptor[0].PhysicalStart = ql.os.smm.cseg_base
+        efi_mmram_descriptor[0].CpuStart = ql.os.smm.cseg_base
+        efi_mmram_descriptor[0].PhysicalSize = ql.os.smm.cseg_size
+        efi_mmram_descriptor[0].RegionState = EFI_SMRAM_STATE.EFI_ALLOCATED
+        # TSEG
+        efi_mmram_descriptor[1].PhysicalStart = ql.os.smm.tseg_base
+        efi_mmram_descriptor[1].CpuStart = ql.os.smm.tseg_base
+        efi_mmram_descriptor[1].PhysicalSize = ql.os.smm.tseg_size
+        efi_mmram_descriptor[1].RegionState = EFI_SMRAM_STATE.EFI_ALLOCATED
+        
         ql.mem.write(ql.os.smm.get_capabilities_info, convert_struct_to_bytes(efi_mmram_descriptor))
 
     efi_smm_access_protocol = EFI_SMM_ACCESS_PROTOCOL()

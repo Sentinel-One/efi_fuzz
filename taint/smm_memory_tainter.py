@@ -48,7 +48,7 @@ class smm_memory_tainter(base_tainter):
 
         address = self.compute_effective_address(ql, destination)
         
-        if address < ql.os.smm.smbase or address > ql.os.smm.smbase + ql.os.smm.smram_size:
+        if not ql.os.smm.in_smram(address):
             # Outside SMRAM
             return
 

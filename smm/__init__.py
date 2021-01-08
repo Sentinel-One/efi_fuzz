@@ -9,23 +9,25 @@ class SmmState(object):
 
     def __init__(self, ql):
         self.swsmi_handlers = {}
-        self.smbase = int(ql.os.profile.get("SMM", "smbase"), 0)
-        self.smram_size = int(ql.os.profile.get("SMM", "smram_size"), 0)
-        self.heap_size = int(ql.os.profile.get("SMM", "heap_size"), 0)
+        self.smbase = int(ql.os.profile.get("smm", "smbase"), 0)
+        self.heap_size = int(ql.os.profile.get("smm", "heap_size"), 0)
         self.swsmi_args = {}
+
+        # Init CSEG.
+        self.cseg_base = int(ql.os.profile.get("cseg", "base"), 0)
+        self.cseg_size = int(ql.os.profile.get("cseg", "size"), 0)
+        ql.mem.map(self.cseg_base, self.cseg_size, info="[SMM CSEG]")
+
+        # Init TSEG.
+        self.tseg_base = int(ql.os.profile.get("tseg", "base"), 0)
+        self.tseg_size = int(ql.os.profile.get("tseg", "size"), 0)
+        ql.mem.map(self.tseg_base, self.tseg_size - self.heap_size, info="[SMM TSEG]")
         
-        if self.smram_size - self.heap_size < 0x10000:
-            raise RuntimeError(f"SMRAM must be at least 64kb in size")
-
-        if ql.mem.is_available(self.smbase, self.smram_size):
-            # Reserve SMRAM.
-            ql.mem.map(self.smbase, self.smram_size - self.heap_size)
-            # Create the SMM heap, which will occupy the upper portion of SMRAM.
-            self.heap = QlMemoryHeap(ql, self.smbase + self.smram_size - self.heap_size, self.smbase + self.smram_size)
-        else:
-            raise RuntimeError(f"Can't allocate SMRAM at 0x{self.smbase:x}-0x{self.smbase+self.smram_size:x}, \
-region is already occupied")
-
+        # Create the SMM heap, which will occupy the upper portion of TSEG.
+        heap_base = self.tseg_base + self.tseg_size - self.heap_size
+        heap_end = self.tseg_base + self.tseg_size
+        self.heap = QlMemoryHeap(ql, heap_base, heap_end)
+        
         # Points to an optional handler context which was specified when the
         # handler was registered.
         self.context_buffer = self.heap.alloc(self.PAGE_SIZE)
@@ -33,6 +35,18 @@ region is already occupied")
         # A pointer to a collection of data in memory that will
         # be conveyed from a non-MM environment into an MM environment.
         self.comm_buffer = self.heap.alloc(self.PAGE_SIZE)
+
+    def in_smram(self, address):
+        if address >= self.cseg_base and address < self.cseg_base + self.cseg_size:
+            # Address overlaps CSEG.
+            return True
+
+        if address >= self.tseg_base and address < self.tseg_base + self.tseg_size:
+            # Address overlaps TSEG.
+            return True
+            
+        # Address doesn't overlap SMRAM.
+        return False
 
 def init(ql, in_smm=False):
     ql.os.smm = SmmState(ql)
