@@ -48,10 +48,10 @@ class smm_memory_tainter(base_tainter):
 
         address = self.compute_effective_address(ql, destination)
         
-        if not ql.os.smm.in_smram(address):
+        if not ql.os.smm.overlaps(address):
             # Outside SMRAM
             return
-
+        
         # If we got here, it means a write to SMRAM has occured.
         # Check if the base register is tainted, which means an attacker can control the memory
         # address being written.

@@ -46,14 +46,14 @@ def install_EFI_SMM_ACCESS_PROTOCOL(ql, start_ptr):
 
         efi_mmram_descriptor = (EFI_MMRAM_DESCRIPTOR * number_of_map_info_entries)()
         # CSEG
-        efi_mmram_descriptor[0].PhysicalStart = ql.os.smm.cseg_base
-        efi_mmram_descriptor[0].CpuStart = ql.os.smm.cseg_base
-        efi_mmram_descriptor[0].PhysicalSize = ql.os.smm.cseg_size
+        efi_mmram_descriptor[0].PhysicalStart = ql.os.smm.cseg.base
+        efi_mmram_descriptor[0].CpuStart = ql.os.smm.cseg.base
+        efi_mmram_descriptor[0].PhysicalSize = ql.os.smm.cseg.size
         efi_mmram_descriptor[0].RegionState = EFI_SMRAM_STATE.EFI_ALLOCATED
         # TSEG
-        efi_mmram_descriptor[1].PhysicalStart = ql.os.smm.tseg_base
-        efi_mmram_descriptor[1].CpuStart = ql.os.smm.tseg_base
-        efi_mmram_descriptor[1].PhysicalSize = ql.os.smm.tseg_size
+        efi_mmram_descriptor[1].PhysicalStart = ql.os.smm.tseg.base
+        efi_mmram_descriptor[1].CpuStart = ql.os.smm.tseg.base
+        efi_mmram_descriptor[1].PhysicalSize = ql.os.smm.tseg.size
         efi_mmram_descriptor[1].RegionState = EFI_SMRAM_STATE.EFI_ALLOCATED
         
         ql.mem.write(ql.os.smm.get_capabilities_info, convert_struct_to_bytes(efi_mmram_descriptor))
