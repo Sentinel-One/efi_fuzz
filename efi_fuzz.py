@@ -91,10 +91,11 @@ def start_afl(_ql: Qiling, user_data):
         """
         Informs AFL that a certain condition should be treated as a crash.
         """
-        if args.sanitize and not _ql.os.heap.validate():
-            # Canary was corrupted.
-            verbose_abort(_ql)
-            return True
+        if args.sanitize and hasattr(_ql.os.heap, "validate"):
+            if not _ql.os.heap.validate():
+                # Canary was corrupted.
+                verbose_abort(_ql)
+                return True
 
         # Some other internal exception.
         crash = (_ql.internal_exception is not None) or (err.errno != UC_ERR_OK)
