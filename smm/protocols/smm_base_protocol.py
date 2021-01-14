@@ -42,7 +42,7 @@ def hook_SmmFreePool(ql, address, params):
     "Buffer": POINTER,
 })
 def hook_SmmAllocatePool(ql, address, params):
-    address = ql.os.smm.heap.alloc(params["Size"])
+    address = ql.os.smm.heap_alloc(params["Size"])
     write_int64(ql, params["Buffer"], address)
     return EFI_SUCCESS if address else EFI_OUT_OF_RESOURCES
 

@@ -22,7 +22,7 @@ class SmmSegment:
         else:
             self.heap = None
 
-    def alloc(self, size):
+    def heap_alloc(self, size):
         if self.heap:
             return self.heap.alloc(size)
         return 0
@@ -51,14 +51,14 @@ class SmmState(object):
         # be conveyed from a non-MM environment into an MM environment.
         self.comm_buffer = self.alloc(self.PAGE_SIZE)
 
-    def alloc(self, size):
+    def heap_alloc(self, size):
         # Prefer allocating from TSEG.
-        p = self.tseg.alloc(size)
+        p = self.tseg.heap_alloc(size)
         if p != 0:
             return p
 
         # Fallback to allocating from CSEG.
-        p = self.cseg.alloc(size)
+        p = self.cseg.heap_alloc(size)
         return p
 
     def overlaps(self, address):
