@@ -50,6 +50,7 @@ import smm.protocols
 import smm.swsmi
 import rom
 import callbacks
+import utils
 
 # for argparse
 auto_int = functools.partial(int, base=0)
@@ -196,6 +197,7 @@ def main(args):
 
     # okay, ready to roll.
     try:
+        utils.enable_low_heap(ql)
         ql.run(end=end, timeout=args.timeout)
     except Exception as ex:
         # Probable Unicorn memory error. Treat as crash.
