@@ -45,11 +45,11 @@ class SmmState(object):
         
         # Points to an optional handler context which was specified when the
         # handler was registered.
-        self.context_buffer = self.alloc(self.PAGE_SIZE)
+        self.context_buffer = self.heap_alloc(self.PAGE_SIZE)
 
         # A pointer to a collection of data in memory that will
         # be conveyed from a non-MM environment into an MM environment.
-        self.comm_buffer = self.alloc(self.PAGE_SIZE)
+        self.comm_buffer = self.heap_alloc(self.PAGE_SIZE)
 
     def heap_alloc(self, size):
         # Prefer allocating from TSEG.
