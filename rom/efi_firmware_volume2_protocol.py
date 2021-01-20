@@ -1,7 +1,6 @@
-from smm.protocols.smm_sw_dispatch2_type import EFI_STATUS, EFI_HANDLE
 from qiling.os.uefi.ProcessorBind import FUNCPTR, STRUCT, VOID, PTR, UINT8, UINTN, UINT32
 from qiling.os.uefi.const import EFI_BUFFER_TOO_SMALL, EFI_NOT_FOUND, EFI_SUCCESS, EFI_UNSUPPORTED
-# from .efi_firmware_volume2_type import EFI_FIRMWARE_VOLUME2_PROTOCOL
+from qiling.os.uefi.UefiBaseType import EFI_STATUS, EFI_HANDLE
 import ctypes
 from qiling.os.uefi.fncc import *
 from qiling.os.uefi.utils import read_int64, write_int64
