@@ -2,6 +2,7 @@ from .save_state_area import create_smm_save_state
 from qiling.os.uefi.ProcessorBind import STRUCT
 from qiling.const import D_INFO
 import ctypes
+from qiling.os.uefi.utils import ptr_write64
 
 
 class EFI_SMM_SW_CONTEXT(STRUCT):
@@ -12,27 +13,27 @@ class EFI_SMM_SW_CONTEXT(STRUCT):
     ]
 
 def trigger_next_smi_handler(ql):
-    (dispatch_handle, smi_num, smi_params) = ql.os.smm.swsmi_handlers.pop(0)
-    ql.nprint(f"Executing SMI 0x{smi_num:x} with params {smi_params}")
+    (dispatch_handle, smi_params) = ql.os.smm.swsmi_handlers.popitem()
+    ql.nprint(f"Executing SMI with params {smi_params}")
     
     # IN EFI_HANDLE  DispatchHandle
     ql.reg.rcx = dispatch_handle
 
     # IN CONST VOID  *Context         OPTIONAL
-    ql.mem.write(ql.os.smm.context_buffer, convert_struct_to_bytes(smi_params["RegisterContext"]))
+    register_context = smi_params['RegisterContext']
+    register_context.saveTo(ql, ql.os.smm.context_buffer)
     ql.reg.rdx = ql.os.smm.context_buffer
 
-    # The CommandPort should correspond to the SMI's number.
-    # See https://github.com/tianocore/edk2/blob/master/MdePkg/Include/Protocol/SmmSwDispatch2.h for more details
-    
-    smm_sw_context = EFI_SMM_SW_CONTEXT()
-    smm_sw_context.SwSmiCpuIndex = 0
-    smm_sw_context.CommandPort = smi_num
-    smm_sw_context.DataPort = 0
-    smm_sw_context.saveTo(ql, ql.os.smm.comm_buffer)
+    # IN OUT VOID    *CommBuffer      OPTIONAL
+    comm_buffer = smi_params['CommunicationBuffer']
+    comm_buffer.saveTo(ql, ql.os.smm.comm_buffer)
+    ql.reg.r8 = ql.os.smm.comm_buffer
 
-    ql.reg.r8 = ql.os.smm.comm_buffer  # OUT VOID    *CommBuffer
-    ql.reg.r9 = ql.os.smm.comm_buffer_size # OUT UINTN   *CommBufferSize
+    # IN OUT UINTN   *CommBufferSize  OPTIONAL
+    size_ptr = ql.os.smm.comm_buffer + comm_buffer.sizeof()
+    ptr_write64(ql, size_ptr, comm_buffer.sizeof())
+    ql.reg.r9 = size_ptr
+
     ql.reg.rip = smi_params["DispatchFunction"]
     ql.stack_push(ql.loader.end_of_execution_ptr)
     return True
