@@ -103,7 +103,7 @@ def install_EFI_SMM_SW_DISPATCH2_PROTOCOL(ql):
         'fields' : (
             ('Register',        hook_SMM_SW_DISPATCH2_Register),
             ('UnRegister',      hook_SMM_SW_DISPATCH2_UnRegister),
-            ('MaximumSwiValue', None)
+            ('MaximumSwiValue', 0xFF)
         )
     }
     ql.loader.smm_context.install_protocol(descriptor, 1)
