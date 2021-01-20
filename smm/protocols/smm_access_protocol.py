@@ -1,10 +1,52 @@
-from .smm_access_type import EFI_MMRAM_DESCRIPTOR, EFI_SMM_ACCESS_PROTOCOL, EFI_SMRAM_STATE
+from smm.protocols.guids import EFI_SMM_ACCESS_PROTOCOL_GUID
 from qiling.os.uefi.fncc import *
 from qiling.os.const import *
 from qiling.os.uefi.const import *
 from qiling.os.uefi.utils import *
-# from qiling.const import *
 from ctypes import Structure, c_uint64, sizeof
+from qiling.os.uefi.ProcessorBind import *
+from qiling.os.uefi.UefiBaseType import *
+from enum import IntEnum
+
+class EFI_SMRAM_STATE(IntEnum):
+    EFI_MMRAM_OPEN               = 0x00000001
+    EFI_MMRAM_CLOSED             = 0x00000002
+    EFI_MMRAM_LOCKED             = 0x00000004
+    EFI_CACHEABLE                = 0x00000008
+    EFI_ALLOCATED                = 0x00000010
+    EFI_NEEDS_TESTING            = 0x00000020
+    EFI_NEEDS_ECC_INITIALIZATION = 0x00000040
+
+
+class EFI_MMRAM_DESCRIPTOR(STRUCT):
+    EFI_MMRAM_DESCRIPTOR = STRUCT
+    # @TODO: should be UINTN?
+    _fields_ = [
+        ('PhysicalStart', UINT64),
+        ('CpuStart', UINT64),
+        ('PhysicalSize', UINT64),
+        ('RegionState', UINT64),
+    ]
+
+class EFI_SMM_ACCESS_PROTOCOL(STRUCT):
+    EFI_SMM_ACCESS_PROTOCOL = STRUCT
+    _fields_ = [
+        ('Open', FUNCPTR(EFI_STATUS, PTR(EFI_SMM_ACCESS_PROTOCOL), UINTN)),
+        ('Close', FUNCPTR(EFI_STATUS, PTR(EFI_SMM_ACCESS_PROTOCOL), UINTN)),
+        ('Lock', FUNCPTR(EFI_STATUS, PTR(EFI_SMM_ACCESS_PROTOCOL), UINTN)),
+        ('GetCapabilities', FUNCPTR(EFI_STATUS, PTR(EFI_SMM_ACCESS_PROTOCOL), PTR(UINTN), PTR(VOID))),
+        ('LockState', BOOLEAN),
+        ('OpenState', BOOLEAN),
+    ]
+
+def EFI_MMRAM_DESCRIPTOR_ARRAY(num_descriptors):
+    class _EFI_MMRAM_DESCRIPTOR_ARRAY(STRUCT):
+        EFI_MMRAM_DESCRIPTOR_ARRAY = STRUCT
+        _fields_ = [
+            ('Descriptors', (EFI_MMRAM_DESCRIPTOR * num_descriptors))
+        ]
+
+    return _EFI_MMRAM_DESCRIPTOR_ARRAY()
 
 @dxeapi(params={
     "This": POINTER, #POINTER_T(struct__EFI_MM_ACCESS_PROTOCOL)
@@ -36,7 +78,7 @@ def hook_GetCapabilities(ql, address, params):
         return EFI_SUCCESS
     return EFI_BUFFER_TOO_SMALL
 
-def install_EFI_SMM_ACCESS_PROTOCOL(ql, start_ptr):
+def install_EFI_SMM_ACCESS_PROTOCOL(ql):
 
     def init_GetCapabilities(ql):
         number_of_map_info_entries = 2 # We only support two SMRAM region
@@ -44,41 +86,30 @@ def install_EFI_SMM_ACCESS_PROTOCOL(ql, start_ptr):
         ql.os.smm.get_capabilities_info_size = number_of_map_info_entries * struct_size
         ql.os.smm.get_capabilities_info  = ql.os.heap.alloc(ql.os.smm.get_capabilities_info_size)
 
-        efi_mmram_descriptor = (EFI_MMRAM_DESCRIPTOR * number_of_map_info_entries)()
+        efi_mmram_descriptor = EFI_MMRAM_DESCRIPTOR_ARRAY(number_of_map_info_entries)
         # CSEG
-        efi_mmram_descriptor[0].PhysicalStart = ql.os.smm.cseg.base
-        efi_mmram_descriptor[0].CpuStart = ql.os.smm.cseg.base
-        efi_mmram_descriptor[0].PhysicalSize = ql.os.smm.cseg.size
-        efi_mmram_descriptor[0].RegionState = EFI_SMRAM_STATE.EFI_ALLOCATED
+        efi_mmram_descriptor.Descriptors[0].PhysicalStart = ql.os.smm.cseg.base
+        efi_mmram_descriptor.Descriptors[0].CpuStart = ql.os.smm.cseg.base
+        efi_mmram_descriptor.Descriptors[0].PhysicalSize = ql.os.smm.cseg.size
+        efi_mmram_descriptor.Descriptors[0].RegionState = EFI_SMRAM_STATE.EFI_ALLOCATED
         # TSEG
-        efi_mmram_descriptor[1].PhysicalStart = ql.os.smm.tseg.base
-        efi_mmram_descriptor[1].CpuStart = ql.os.smm.tseg.base
-        efi_mmram_descriptor[1].PhysicalSize = ql.os.smm.tseg.size
-        efi_mmram_descriptor[1].RegionState = EFI_SMRAM_STATE.EFI_ALLOCATED
-        
-        ql.mem.write(ql.os.smm.get_capabilities_info, convert_struct_to_bytes(efi_mmram_descriptor))
+        efi_mmram_descriptor.Descriptors[1].PhysicalStart = ql.os.smm.tseg.base
+        efi_mmram_descriptor.Descriptors[1].CpuStart = ql.os.smm.tseg.base
+        efi_mmram_descriptor.Descriptors[1].PhysicalSize = ql.os.smm.tseg.size
+        efi_mmram_descriptor.Descriptors[1].RegionState = EFI_SMRAM_STATE.EFI_ALLOCATED
 
-    efi_smm_access_protocol = EFI_SMM_ACCESS_PROTOCOL()
-    ptr = start_ptr
-    pointer_size = 8
+        efi_mmram_descriptor.saveTo(ql, ql.os.smm.get_capabilities_info)        
 
-    efi_smm_access_protocol.Open = ptr
-    ql.hook_address(hook_Open, ptr)
-    ptr += pointer_size
-
-    efi_smm_access_protocol.Close = ptr
-    ql.hook_address(hook_Close, ptr)
-    ptr += pointer_size
-
-    efi_smm_access_protocol.Lock = ptr
-    ql.hook_address(hook_Lock, ptr)
-    ptr += pointer_size
+    descriptor = {
+        'guid': EFI_SMM_ACCESS_PROTOCOL_GUID,
+        'struct' : EFI_SMM_ACCESS_PROTOCOL,
+        'fields' : (
+            ('Open', hook_Open),
+            ('Close', hook_Close),
+            ('Lock', hook_Lock),
+            ('GetCapabilities', hook_GetCapabilities)
+        )
+    }
+    ql.loader.smm_context.install_protocol(descriptor, 1)
 
     init_GetCapabilities(ql)
-    efi_smm_access_protocol.GetCapabilities = ptr
-    ql.hook_address(hook_GetCapabilities, ptr)
-    ptr += pointer_size
-
-    return (ptr, efi_smm_access_protocol)
-
-

@@ -4,7 +4,7 @@ from .smm_sx_dispatch_protocol import install_EFI_SMM_SX_DISPATCH_PROTOCOL
 from .smm_base_protocol import install_EFI_SMM_BASE_PROTOCOL
 from .smm_variable_protocol import install_EFI_SMM_VARIABLE_PROTOCOL
 from .smm_cpu_protocol import init_EFI_SMM_CPU_PROTOCOL
-from .mm_access_protocol import init_GetCapabilities
+from .smm_access_protocol import install_EFI_SMM_ACCESS_PROTOCOL
 from .guids import *
 from qiling.os.uefi.const import *
 from qiling.os.uefi.utils import ptr_write64, ptr_read64
@@ -12,41 +12,14 @@ from ..swsmi import EFI_SMM_SW_CONTEXT, trigger_swsmi
 import ctypes
 import random
 
-class SmmState(object):
-    def __init__(self, ql):
-        self.swsmi_handlers = []
-        self.smbase = int(ql.os.profile.get("smm", "smbase"), 0)
-        self.smram_size = int(ql.os.profile.get("smm", "smram_size"), 0)
-        self.swsmi_args = {}
-        
-        # Communication buffer
-        self.comm_buffer = ql.os.heap.alloc(ctypes.sizeof(EFI_SMM_SW_CONTEXT))
-        self.comm_buffer_size = ql.os.heap.alloc(ctypes.sizeof(ctypes.c_void_p))
-        ql.mem.write(self.comm_buffer_size, ctypes.sizeof(EFI_SMM_SW_CONTEXT).to_bytes(ctypes.sizeof(ctypes.c_void_p), 'little'))
-        
-        # Reserve SMRAM
-        ql.mem.map(self.smbase, self.smram_size)
-
-def init(ql, in_smm=False):
+def install(ql, in_smm=False):
     install_EFI_SMM_SW_DISPATCH_PROTOCOL(ql)
     install_EFI_SMM_SW_DISPATCH2_PROTOCOL(ql)
     install_EFI_SMM_SX_DISPATCH_PROTOCOL(ql)
     install_EFI_SMM_BASE_PROTOCOL(ql)
     install_EFI_SMM_VARIABLE_PROTOCOL(ql)
-
-    ql.os.smm = SmmState(ql)
-
-    ql.loader.in_smm = in_smm
-
-    def after_module_execution_callback(ql, number_of_modules_left):
-        if number_of_modules_left == 0:
-            return trigger_swsmi(ql)
-        return False
-
-    ql.os.after_module_execution_callbacks.append(after_module_execution_callback)
-    
     init_EFI_SMM_CPU_PROTOCOL(ql)
-    init_GetCapabilities(ql)
+    install_EFI_SMM_ACCESS_PROTOCOL(ql)
 
     def hook_mm_interrupt_register(ql, address, params):
         smi_num = 0
