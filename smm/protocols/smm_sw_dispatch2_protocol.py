@@ -8,6 +8,20 @@ from qiling.os.uefi.UefiBaseType import *
 from qiling.os.uefi.const import *
 from qiling.os.uefi.utils import ptr_write64, ptr_read64
 
+class EFI_SMM_SW_REGISTER_CONTEXT(STRUCT):
+    EFI_SMM_SW_REGISTER_CONTEXT = STRUCT
+    _fields_ = [
+        ('SwSmiInputValue', UINTN),
+    ]
+
+class EFI_SMM_SW_CONTEXT(STRUCT):
+    EFI_SMM_SW_CONTEXT = STRUCT
+    _fields_ = [
+        ('SwSmiCpuIndex', UINTN),
+        ('CommandPort', UINT8),
+        ('DataPort', UINT8)
+    ]
+
 class EFI_SMM_SW_DISPATCH2_PROTOCOL(STRUCT):
     EFI_SMM_SW_DISPATCH2_PROTOCOL = STRUCT
     _fields_ = [
@@ -26,12 +40,10 @@ class EFI_SMM_SW_DISPATCH2_PROTOCOL(STRUCT):
 })
 def hook_SMM_SW_DISPATCH2_Register(ql, address, params):
     # Read 'this' pointer.
-    this = EFI_SMM_SW_DISPATCH2_PROTOCOL.from_buffer(
-        ql.mem.read(params["This"], ctypes.sizeof(EFI_SMM_SW_DISPATCH2_PROTOCOL)))
+    this = EFI_SMM_SW_DISPATCH2_PROTOCOL.loadFrom(ql, params['This'])
 
     # Read registration context.
-    smm_sw_register_context = EFI_SMM_SW_REGISTER_CONTEXT.from_buffer(
-        ql.mem.read(params['RegisterContext'], ctypes.sizeof(EFI_SMM_SW_REGISTER_CONTEXT)))
+    smm_sw_register_context = EFI_SMM_SW_REGISTER_CONTEXT.loadFrom(ql, params['RegisterContext'])
 
     if smm_sw_register_context.SwSmiInputValue == 0xFFFFFFFF_FFFFFFFF:
         raise NotImplementedError("SwSmiInputValue == 0xFFFFFFFF_FFFFFFFF")
@@ -57,8 +69,8 @@ def hook_SMM_SW_DISPATCH2_Register(ql, address, params):
     smm_sw_context.DataPort = 0
 
     # Allocate a unique handle for this SMI.
-    dispatch_handle = ql.os.heap.alloc(1)
-    write_int64(ql, params["DispatchHandle"], dispatch_handle)
+    dh = ql.os.heap.alloc(1)
+    ptr_write64(ql, params["DispatchHandle"], dh)
     
     smi_params = {
         "DispatchFunction": params["DispatchFunction"],
@@ -67,11 +79,7 @@ def hook_SMM_SW_DISPATCH2_Register(ql, address, params):
     }
 
     # Let's save the dispatch params, so they can be triggered if needed.
-    smi_num = int.from_bytes(ql.mem.read(params['RegisterContext'], 8), 'little')
-    DispatchHandle = random.getrandbits(64)
-    ql.os.smm.swsmi_handlers.append((DispatchHandle, smi_num, params))
-    ptr_write64(ql, params["DispatchHandle"], DispatchHandle)
-
+    ql.os.smm.swsmi_handlers[dh] = smi_params
     return EFI_SUCCESS
     
 @dxeapi(params={
@@ -79,9 +87,14 @@ def hook_SMM_SW_DISPATCH2_Register(ql, address, params):
     "DispatchHandle": POINTER, #POINTER_T(None)
 })
 def hook_SMM_SW_DISPATCH2_UnRegister(ql, address, params):
-    dh = ptr_read64(ql, params["DispatchHandle"])
-    ql.os.smm.swsmi_handlers[:] = [tup for tup in ql.os.smm.swsmi_handlers if tup[0] != dh]
-    return EFI_SUCCESS
+    dh = params['DispatchHandle']
+    try:
+        del ql.os.smm.swsmi_handlers[dh]
+        ql.os.heap.free(dh)
+    except:
+        return EFI_INVALID_PARAMETER
+    else:
+        return EFI_SUCCESS
 
 def install_EFI_SMM_SW_DISPATCH2_PROTOCOL(ql):
     descriptor = {
