@@ -1,6 +1,6 @@
 import ctypes
 from qiling.os.uefi.protocols.EfiLoadedImageProtocol import EFI_LOADED_IMAGE_PROTOCOL
-from qiling.os.uefi.utils import convert_struct_to_bytes
+# from qiling.os.uefi.utils import convert_struct_to_bytes
 from .efi_firmware_volume2_protocol import install_EFI_FIRMWARE_VOLUME2_PROTOCOL
 import uefi_firmware
 
@@ -28,18 +28,9 @@ def install(ql, rom_file):
             if region.name == 'bios':
                 return region
 
-    # Allocate and initialize the protocols buffer
-    protocol_buf_size = 0x1000
-    ptr = ql.os.heap.alloc(protocol_buf_size)
-    ql.mem.write(ptr, b'\x90' * protocol_buf_size)
 
     # EFI_FIRMWARE_VOLUME2_PROTOCOL
-    efi_firmware_voluem2_protocol_ptr = ptr
-    (ptr, efi_firmware_voluem2_protocol) = install_EFI_FIRMWARE_VOLUME2_PROTOCOL(ql, ptr)
-    ql.loader.handle_dict[1]['220e73b6-6bdb-4413-8405-b974b108619a'] = efi_firmware_voluem2_protocol_ptr
-
-    # Serialize all protocols to memory
-    ql.mem.write(efi_firmware_voluem2_protocol_ptr, convert_struct_to_bytes(efi_firmware_voluem2_protocol))
+    install_EFI_FIRMWARE_VOLUME2_PROTOCOL(ql)
 
     _patch_device_handle(ql, 1)
 
