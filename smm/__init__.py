@@ -1,5 +1,5 @@
 from . import protocols
-from qiling.os.uefi.utils import convert_struct_to_bytes, write_int64
+from qiling.os.uefi.utils import write_int64
 from qiling.os.memory import QlMemoryHeap
 from .swsmi import trigger_swsmi
 
