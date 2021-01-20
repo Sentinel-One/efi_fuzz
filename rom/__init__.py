@@ -1,5 +1,5 @@
 import ctypes
-from qiling.os.uefi.type64 import EFI_LOADED_IMAGE_PROTOCOL
+from qiling.os.uefi.protocols.EfiLoadedImageProtocol import EFI_LOADED_IMAGE_PROTOCOL
 from qiling.os.uefi.utils import convert_struct_to_bytes
 from .efi_firmware_volume2_protocol import install_EFI_FIRMWARE_VOLUME2_PROTOCOL
 import uefi_firmware
