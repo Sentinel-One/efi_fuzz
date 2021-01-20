@@ -28,7 +28,7 @@ def check_and_load(ql):
             if module_path is None:
                 continue
             try:
-                ql.loader.map_and_load(module_path, execute_now=False)
+                ql.loader.map_and_load(module_path, False)
             except Exception as e:
                 print(e)
                 print(file.guid, file.guid.hex())
