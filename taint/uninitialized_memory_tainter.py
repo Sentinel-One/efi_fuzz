@@ -40,6 +40,10 @@ def GetVariable_propagate_taint(ql, address, params):
     initialized, so the target buffer becomes untainted.
     """
     begin = params['Data']
+    if begin == 0:
+        # May be NULL with a zero DataSize in order to determine the size buffer needed.
+        return
+        
     end = begin + ptr_read64(ql, params['DataSize'])
     ql.tainters['uninitialized'].set_taint_range(begin, end, False)
 
