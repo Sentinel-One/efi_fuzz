@@ -12,6 +12,7 @@ import sys
 sys.path.append('..')
 from taint.tracker import *
 import mockito
+import taint
 
 def test_uninitialized_memory_tracker():
     enable_trace = True
@@ -23,7 +24,7 @@ def test_uninitialized_memory_tracker():
                 output='debug')
 
     # NVRAM environment.
-    ql.env = {'foo': b'\xde\xad\xbe\xef'}
+    ql.env.update({'foo': b'\xde\xad\xbe\xef'})
 
     def validate_taint_set_variable(ql, address, params):
         assert params['VariableName'] == 'bar' and params['DataSize'] == 0x14
@@ -41,7 +42,7 @@ def test_uninitialized_memory_tracker():
     ql.set_api("SetVariable", set_variable_spy, QL_INTERCEPT.ENTER)
 
     # okay, ready to roll.
-    enable_uninitialized_memory_tracker(ql)
+    taint.tracker.enable(ql, ['uninitialized'])
     ql.run()
 
     # Make sure that SetVariable() was intercepted once.
