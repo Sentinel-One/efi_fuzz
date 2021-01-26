@@ -16,7 +16,7 @@ import taint
 
 def test_uninitialized_memory_tracker():
     enable_trace = True
-    ql = Qiling(['./bin/UninitializedMemoryTrackerTest.efi'],
+    ql = Qiling(['./bin/EfiFuzzTests.efi'],
                 ".",                                        # rootfs
                 console=True if enable_trace else False,
                 stdout=1 if enable_trace else None,
@@ -24,7 +24,7 @@ def test_uninitialized_memory_tracker():
                 output='debug')
 
     # NVRAM environment.
-    ql.env.update({'foo': b'\xde\xad\xbe\xef'})
+    ql.env.update({'TestName': b'UninitializedMemoryTracker', 'foo': b'\xde\xad\xbe\xef'})
 
     def validate_taint_set_variable(ql, address, params):
         assert params['VariableName'] == 'bar' and params['DataSize'] == 0x14
