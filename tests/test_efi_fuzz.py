@@ -66,7 +66,7 @@ def test_firmware_volume():
     # NVRAM environment.
     ql.env.update({'TestName': TEST_NAME})
 
-    rom.install(ql, "./bin/$0AGD000.FL1")
+    rom.install(ql, "./res/$0AGD000.FL1")
 
     def validate_read_section(ql, address, params):
         buffer_size = read_int64(ql, params['BufferSize'])
