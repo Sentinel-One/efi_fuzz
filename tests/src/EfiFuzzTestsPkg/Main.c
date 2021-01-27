@@ -31,6 +31,13 @@ FirmwareVolumeTestMain (
   IN EFI_HANDLE        ImageHandle,
   IN EFI_SYSTEM_TABLE  *SystemTable
   );
+  
+EFI_STATUS
+EFIAPI
+SmiDispatchingTestMain (
+  IN EFI_HANDLE        ImageHandle,
+  IN EFI_SYSTEM_TABLE  *SystemTable
+  );
 
 EFI_STATUS
 EFIAPI
@@ -69,6 +76,8 @@ _ModuleEntryPoint (
         status = UninitializedMemoryTrackerTestMain(ImageHandle, SystemTable);
     } else if (AsciiStrCmp(TestName, "FirmwareVolume") == 0) {
         status = FirmwareVolumeTestMain(ImageHandle, SystemTable);
+    } else if (AsciiStrCmp(TestName, "SmiDispatching") == 0) {
+        status = SmiDispatchingTestMain(ImageHandle, SystemTable);
     } else {
         status = EFI_INVALID_PARAMETER;
     }
