@@ -15,24 +15,26 @@ def _patch_device_handle(ql, device_handle):
 
 def install(ql, rom_file):
     
-    def bios_region(rom_file):
+    def bios_region(fd):
         """
         Returns the BIOS region of the given UEFI image.
         """
-        data = open(rom_file, 'rb').read()
-        parser = uefi_firmware.AutoParser(data)
-        fd = parser.parse()
+        assert fd.type_label == 'FlashDescriptor'
         for region in fd.regions:
             if region.name == 'bios':
                 return region
-
 
     # EFI_FIRMWARE_VOLUME2_PROTOCOL
     install_EFI_FIRMWARE_VOLUME2_PROTOCOL(ql)
 
     _patch_device_handle(ql, 1)
 
-    try:
-        ql.os.firmware_volumes = bios_region(rom_file).objects
-    except:
+    data = open(rom_file, 'rb').read()
+    parser = uefi_firmware.AutoParser(data)
+    fd = parser.parse()
+    if fd.type_label == 'FlashDescriptor':
+        ql.os.firmware_volumes = bios_region(fd).objects
+    elif fd.type_label == 'FirmwareCapsule':
+        ql.os.firmware_volumes = fd.objects
+    else:
         ql.os.firmware_volumes = []
