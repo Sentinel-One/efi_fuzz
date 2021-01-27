@@ -15,15 +15,15 @@
 #pragma optimize("", off)
 #endif
 
-EFI_GUID DummyGuid =   {0x8BE4DF61, 0x93CA, 0x11d2, {0xAA, 0x0D, 0x00, 0xE0, 0x98, 0x03, 0xAA, 0xBB }};
 
 EFI_STATUS
 EFIAPI
-_ModuleEntryPoint (
+UninitializedMemoryTrackerTestMain(
   IN EFI_HANDLE        ImageHandle,
   IN EFI_SYSTEM_TABLE  *SystemTable
   )
 {
+    EFI_GUID DummyGuid =   {0x8BE4DF61, 0x93CA, 0x11d2, {0xAA, 0x0D, 0x00, 0xE0, 0x98, 0x03, 0xAA, 0xBB }};
     UINT8 StackBuffer[16]; // Intentionally uninitialized.
     UINTN StackBufferSize = sizeof(StackBuffer);
     UINT32 Attributes = 0;
