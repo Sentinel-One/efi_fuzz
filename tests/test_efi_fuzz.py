@@ -18,6 +18,7 @@ import rom
 import smm
 import callbacks
 from smm.protocols.smm_sw_dispatch2_protocol import EFI_SMM_SW_REGISTER_CONTEXT
+from smm.save_state_area import EFI_MM_SAVE_STATE_REGISTER as EFI_SMM_SAVE_STATE_REGISTER
 from smm.swsmi import EFI_SMM_SW_CONTEXT
 
 def test_uninitialized_memory_tracker():
@@ -133,3 +134,42 @@ def test_smi_dispatching():
 
     # Make sure that the SMI handler was intercepted once.
     mockito.verify(smi_intercept, times=1).__call__(*mockito.ARGS)
+
+def test_smm_save_state():
+    TEST_NAME = b'SmmSaveState'
+
+    enable_trace = True
+    ql = Qiling(['./bin/EfiFuzzTests.efi'],
+                ".",                                        # rootfs
+                console=True if enable_trace else False,
+                stdout=1 if enable_trace else None,
+                stderr=1 if enable_trace else None,
+                output='debug',
+                profile='../smm/smm.ini')
+
+    # NVRAM environment.
+    ql.env.update({'TestName': TEST_NAME})
+
+    # Init SMM
+    callbacks.set_after_module_execution_callback(ql)
+    smm.init(ql, in_smm=True)
+
+    def validate_smm_read_save_state(ql, address, params):
+        assert params['Width'] == 0x4
+        assert params['Register'] == EFI_SMM_SAVE_STATE_REGISTER.RAX.value
+        assert params['CpuIndex'] == 0x0
+
+        data = int.from_bytes(ql.mem.read(params['Buffer'], params['Width']), 'little')
+        assert data == 0xbadcafe
+        return (address, params)
+
+    # Hook ReadSaveState().
+    validate_smm_read_save_state = mockito.spy(validate_smm_read_save_state)
+    ql.set_api("SmmReadSaveState", validate_smm_read_save_state, QL_INTERCEPT.EXIT)
+
+    # okay, ready to roll.
+    ql.os.smm.swsmi_args = {'rax' : 0xdeadbeef_0badcafe.to_bytes(8, 'little')}
+    ql.run()
+
+    # Make sure that the SMI handler was intercepted once.
+    mockito.verify(validate_smm_read_save_state, times=1).__call__(*mockito.ARGS)

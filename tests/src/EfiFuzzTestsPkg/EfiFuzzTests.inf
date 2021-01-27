@@ -10,6 +10,8 @@
   UninitializedMemoryTrackerTest.c
   FirmwareVolumeTest.c
   SmiDispatchingTest.c
+  SmmSaveStateTest.c
+  SmmUtils.c
 
 [Packages]
   MdePkg/MdePkg.dec
