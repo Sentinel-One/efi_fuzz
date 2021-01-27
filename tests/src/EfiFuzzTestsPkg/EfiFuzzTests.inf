@@ -9,6 +9,7 @@
   Main.c
   UninitializedMemoryTrackerTest.c
   FirmwareVolumeTest.c
+  SmiDispatchingTest.c
 
 [Packages]
   MdePkg/MdePkg.dec

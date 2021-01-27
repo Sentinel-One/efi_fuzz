@@ -1,14 +1,5 @@
 /**
- * A small UEFI application to test taint propagation of uninitialized memory.
- * When drawing the buffers, 'x' will be used to denote an initialized byte,
- * whereas 'u' will be used to denote an uninitialized byte.
- *
- * For example:
- * +-----------+
- * | x | u u u |
- * +-----------+
- *
- * represents a buffer with one initialized byte and 3 uninitialized bytes.
+ * A small UEFI application to test our implementation of EFI_FIRMWARE_VOLUME2_PROTOCOL.
  */
 
 #ifdef _MSC_VER
