@@ -41,6 +41,13 @@ SmiDispatchingTestMain (
 
 EFI_STATUS
 EFIAPI
+SmmSaveStateTestMain (
+  IN EFI_HANDLE        ImageHandle,
+  IN EFI_SYSTEM_TABLE  *SystemTable
+  );
+
+EFI_STATUS
+EFIAPI
 _ModuleEntryPoint (
   IN EFI_HANDLE        ImageHandle,
   IN EFI_SYSTEM_TABLE  *SystemTable
@@ -78,6 +85,8 @@ _ModuleEntryPoint (
         status = FirmwareVolumeTestMain(ImageHandle, SystemTable);
     } else if (AsciiStrCmp(TestName, "SmiDispatching") == 0) {
         status = SmiDispatchingTestMain(ImageHandle, SystemTable);
+    } else if (AsciiStrCmp(TestName, "SmmSaveState") == 0) {
+        status = SmmSaveStateTestMain(ImageHandle, SystemTable);
     } else {
         status = EFI_INVALID_PARAMETER;
     }
