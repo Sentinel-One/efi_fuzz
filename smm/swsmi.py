@@ -1,6 +1,5 @@
 from .save_state_area import create_smm_save_state
 from qiling.os.uefi.ProcessorBind import STRUCT
-from qiling.const import D_INFO
 import ctypes
 from qiling.os.uefi.utils import ptr_write64
 
