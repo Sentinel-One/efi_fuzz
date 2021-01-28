@@ -13,7 +13,7 @@ class EFI_SMM_SW_CONTEXT(STRUCT):
 
 def trigger_next_smi_handler(ql):
     (dispatch_handle, smi_params) = ql.os.smm.swsmi_handlers.popitem()
-    ql.nprint(f"Executing SMI with params {smi_params}")
+    ql.log.info(f"Executing SMI with params {smi_params}")
     
     # IN EFI_HANDLE  DispatchHandle
     ql.reg.rcx = dispatch_handle
