@@ -36,7 +36,7 @@ def hook_InSmm(ql, address, params):
 def hook_GetSmstLocation(ql, address, params):
     if params["Smst"] == 0:
         return EFI_INVALID_PARAMETER
-    ptr_write64(ql, params["Smst"], ql.loader.mm_system_table_ptr)
+    ptr_write64(ql, params["Smst"], ql.loader.gSmst)
     return EFI_SUCCESS
 
 
