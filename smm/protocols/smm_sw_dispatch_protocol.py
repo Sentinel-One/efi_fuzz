@@ -47,4 +47,4 @@ def install_EFI_SMM_SW_DISPATCH_PROTOCOL(ql):
             ('MaximumSwiValue', None)
         )
     }
-    ql.loader.smm_context.install_protocol(descriptor, 1)
+    ql.loader.dxe_context.install_protocol(descriptor, 1)
