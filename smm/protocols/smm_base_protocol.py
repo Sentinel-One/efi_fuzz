@@ -112,6 +112,6 @@ def install_EFI_SMM_BASE_PROTOCOL(ql):
             ('GetSmstLocation',     hook_GetSmstLocation)
         )
     }
-    ql.loader.smm_context.install_protocol(descriptor, 1)
+    ql.loader.dxe_context.install_protocol(descriptor, 1)
 
 
