@@ -18,7 +18,7 @@ class smm_memory_tainter(base_tainter):
     def register(self, ql):
         super().register(ql, self.NAME)
 
-        ql.set_api("SMM_CPU_ReadSaveState", ReadSaveState_propagate_taint, QL_INTERCEPT.EXIT)
+        ql.set_api("SmmReadSaveState", ReadSaveState_propagate_taint, QL_INTERCEPT.EXIT)
 
     @staticmethod
     def compute_effective_address(ql, operand):
@@ -58,10 +58,10 @@ class smm_memory_tainter(base_tainter):
         base_reg = ql.reg.reverse_mapping[destination.mem.base]
         triton_base_reg = getattr(self.triton_ctx.registers, base_reg)
         if self.triton_ctx.isRegisterTainted(triton_base_reg):
-            ql.dprint(D_INFO, "***")
-            ql.dprint(D_INFO, "Detected a write to SMRAM with attacker-controllable address!")
-            ql.dprint(D_INFO, instruction)
-            ql.dprint(D_INFO, "***")
+            ql.log.error("***")
+            ql.log.error("Detected a write to SMRAM with attacker-controllable address!")
+            ql.log.error(instruction)
+            ql.log.error("***")
             ql.os.emu_error()
             os.abort()
             
