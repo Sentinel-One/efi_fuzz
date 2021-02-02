@@ -8,7 +8,7 @@ from .smm_access_protocol import install_EFI_SMM_ACCESS_PROTOCOL
 from .guids import *
 from qiling.os.uefi.const import *
 from qiling.os.uefi.utils import ptr_write64, ptr_read64
-from ..swsmi import EFI_SMM_SW_CONTEXT, trigger_swsmi
+from ..swsmi import trigger_swsmi
 import ctypes
 import random
 

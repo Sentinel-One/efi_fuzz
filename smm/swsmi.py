@@ -4,13 +4,6 @@ import ctypes
 from qiling.os.uefi.utils import ptr_write64
 
 
-class EFI_SMM_SW_CONTEXT(STRUCT):
-    _fields_ = [
-        ('SwSmiCpuIndex', ctypes.c_uint64),
-        ('CommandPort', ctypes.c_uint8),
-        ('DataPort', ctypes.c_uint8)
-    ]
-
 def trigger_next_smi_handler(ql):
     (dispatch_handle, smi_params) = ql.os.smm.swsmi_handlers.popitem()
     ql.log.info(f"Executing SMI with params {smi_params}")
