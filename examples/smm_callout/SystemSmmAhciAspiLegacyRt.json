@@ -1,0 +1,16 @@
+{
+	"protocols": [
+		{
+			"guid": "c8713cd0-307b-4904-b8ce-cf6e4a149fa6"
+		}
+	],
+
+	"registers": {
+		"rbx": "0xdeadbeef",
+		"rcx": "0"
+	},
+
+	"memory": {
+		"0xdeadbeef": "00 00 00 00 01 00 FF 00"
+	}
+}   
