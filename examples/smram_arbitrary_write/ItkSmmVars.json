@@ -1,0 +1,11 @@
+{
+	"protocols": [
+		{
+			"guid": "c8713cd0-307b-4904-b8ce-cf6e4a149fa6"
+		}
+	],
+
+	"registers": {
+		"rsi": "0xA0000"
+	}
+}   
