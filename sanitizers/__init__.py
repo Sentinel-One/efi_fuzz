@@ -1,5 +1,5 @@
 from . import memory_sanitizer
-from . import smm_sanitizer
+from . import smm_callout_sanitizer
 
 from .base_sanitizer import base_sanitizer
 
