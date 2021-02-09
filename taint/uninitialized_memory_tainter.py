@@ -55,11 +55,11 @@ def SetVariable_propagate_taint(ql, address, params):
     begin = params["Data"]
     end = params["Data"] + params["DataSize"]
     if ql.tainters['uninitialized'].is_range_tainted(begin, end):
-        ql.dprint(D_INFO, f"***")
-        ql.dprint(D_INFO, f"Detected potential info leak in SetVariable({params})")
-        ql.dprint(D_INFO, f"***")
+        ql.log.error(f"***")
+        ql.log.error(f"Detected potential info leak in SetVariable({params})")
+        ql.log.error(f"***")
         ql.os.emu_error()
-        os.abort()
+        ql.os.fault_handler()
 
 class uninitialized_memory_tainter(base_tainter):
 
