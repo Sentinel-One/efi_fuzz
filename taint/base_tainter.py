@@ -57,11 +57,11 @@ class base_tainter(ABC):
     def set_taint_range(self, begin, end, taint):
         # Apply taint for the entire memory range.
         taint_func = self.triton_ctx.taintMemory if taint else self.triton_ctx.untaintMemory
-        for addr in range(begin, end):
+        for addr in range(begin, end + 1):
             taint_func(addr)
 
     def get_taint_range(self, begin, end):
-        return [self.triton_ctx.isMemoryTainted(addr) for addr in range(begin, end)]
+        return [self.triton_ctx.isMemoryTainted(addr) for addr in range(begin, end + 1)]
 
     def copy_taint(self, source, destination, length):
         for i in range(length):
