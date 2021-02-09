@@ -103,9 +103,4 @@ if __name__ == "__main__":
     nvram_subparser.add_argument("varname", help="Name of the NVRAM variable to mutate")
     nvram_subparser.add_argument("infile", help="Mutated input buffer. Set to @@ when running under afl-fuzz")
     
-    # SWSMI sub-command
-    swsmi_subparser = subparsers.add_parser("swsmi", help="Fuzz arguments of SWSMI handlers")
-    swsmi_subparser.add_argument("registers", metavar='<registers>|ALL', help="List of registers to fuzz", choices=smm.swsmi.fuzzable_registers() + ('ALL', ), nargs='+')
-    swsmi_subparser.add_argument("infile", help="Mutated input buffer. Set to @@ when running under afl-fuzz")
-
     main(parser.parse_args())
