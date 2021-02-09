@@ -63,5 +63,5 @@ class smm_memory_tainter(base_tainter):
             ql.log.error(instruction)
             ql.log.error("***")
             ql.os.emu_error()
-            os.abort()
+            ql.os.fault_handler()
             
