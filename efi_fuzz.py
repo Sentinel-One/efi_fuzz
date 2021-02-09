@@ -24,184 +24,55 @@ Then, to fuzz a UEFI module, perform the following steps:
 """
 
 # Make sure Qiling uses our patched Unicorn instead of it's own.
-import unicornafl
-unicornafl.monkeypatch()
+from FuzzingManager import FuzzingManager
 
-import io
-import pickle
-import pefile
 import argparse
 import os
 import functools
-import importlib
 
 try:
     import monkeyhex
 except ImportError:
     pass
 
-from qiling import arch
-from qiling import Qiling
 from unicorn import *
 import sanitizers
 import taint
 import taint.tracker
-import smm.protocols
-import smm.swsmi
-import rom
-import callbacks
-import utils
+from EmulationManager import EmulationManager
 
 # for argparse
 auto_int = functools.partial(int, base=0)
 
-def start_afl(_ql: Qiling, user_data):
-    """
-    Callback from inside
-    """
+def emulate(args):
+    e = EmulationManager(args.target, args.extra_modules)
+    e.load_nvram(args.nvram_file)
+    e.enable_smm()
+    e.enable_taint(['uninitialized'])
+    e.enable_coverage(args.coverage_file)
+    e.apply(args.json_conf)
+    e.set_fault_handler(args.fault)
+    e.run()
 
-    args = user_data
-
-    def place_input_callback_nvram(uc, _input, _, data):
-        """
-        Injects the mutated variable to the emulated NVRAM environment.
-        """
-        try:
-            _ql.env[args.varname] = _input
-        except Exception as e:
-            verbose_abort(_ql)
-
-    def place_input_callback_swsmi(uc, _input, _, data):
-        """
-        Injects the mutated variable to the emulated NVRAM environment.
-        """
-        total_size = len(args.registers) * 8
-        _input = _input.ljust(total_size, b'\x00') # zero padding
-
-        stream = io.BytesIO(_input)
-
-        if 'ALL' in args.registers:
-            fuzz_regs = smm.swsmi.fuzzable_registers()
-        else:
-            fuzz_regs = args.registers
-
-        for reg in fuzz_regs:
-            _ql.os.smm.swsmi_args[reg] = stream.read(8)
-
-    def validate_crash(uc, err, _input, persistent_round, user_data):
-        """
-        Informs AFL that a certain condition should be treated as a crash.
-        """
-        if args.sanitize and hasattr(_ql.os.heap, "validate"):
-            if not _ql.os.heap.validate():
-                # Canary was corrupted.
-                verbose_abort(_ql)
-                return True
-
-        # Some other internal exception.
-        crash = (_ql.internal_exception is not None) or (err.errno != UC_ERR_OK)
-        if args.mode == 'swsmi' and (err.errno == UC_ERR_READ_UNMAPPED) or (err.errno == UC_ERR_WRITE_UNMAPPED):
-            crash = False
-
-        if crash and args.output == 'debug':
-            _ql.os.emu_error()
-
-        return crash
-
-    # Choose the function to inject the mutated input to the emulation environment,
-    # based on the fuzzing mode.
-    if args.mode == 'nvram':
-        place_input_callback = place_input_callback_nvram
-    elif args.mode == 'swsmi':
-        place_input_callback = place_input_callback_swsmi
-    else:
-        assert False, "Bad fuzzing mode"
-
-    # We start our AFL forkserver or run once if AFL is not available.
-    # This will only return after the fuzzing stopped.
-    try:
-        if not _ql.uc.afl_fuzz(input_file=args.infile,
-                               place_input_callback=place_input_callback,
-                               exits=[_ql.os.exit_point],
-                               always_validate=True,
-                               validate_crash_callback=validate_crash):
-            print("Dry run completed successfully without AFL attached.")
-            os._exit(0)  # that's a looot faster than tidying up.
-    except unicornafl.UcAflError as ex:
-        if ex != unicornafl.UC_AFL_RET_CALLED_TWICE:
-            raise
+def fuzz(args):
+    e = FuzzingManager(args.target, args.extra_modules)
+    e.load_nvram(args.nvram_file)
+    e.enable_smm()
+    e.enable_taint(['uninitialized'])
+    e.enable_coverage(args.coverage_file)
+    e.apply(args.json_conf)
+    e.set_fault_handler(args.fault)
+    e.run(args.end, args.timeout, args.varname, args.infile)
 
 def main(args):
     enable_trace = args.output != 'off'
 
-    # Listify extra modules.
-    if args.extra_modules is None:
-        extra_modules = []
-    else:
-        extra_modules = args.extra_modules
-
-    # Load NVRAM environment.
-    if args.nvram_file:
-        with open(args.nvram_file, 'rb') as fh:
-            env = pickle.load(fh)
-    else:
-        env = {}
-
-    ql = Qiling(extra_modules + [args.target],
-                ".",                                        # rootfs
-                console=True if enable_trace else False,
-                stdout=1 if enable_trace else None,
-                stderr=1 if enable_trace else None,
-                output=args.output,
-                profile="smm/smm.ini",
-                env=env)
-
-    # Setup callbacks.
-    callbacks.set_after_module_execution_callback(ql)
-
-    if args.end:
-        end = callbacks.set_end_of_execution_callback(ql, args.end)
-    else:
-        end = None
-
-    # The last loaded image is the main module we're interested in fuzzing
-    pe = pefile.PE(args.target, fast_load=True)
-    image_base = ql.loader.images[-1].base
-    entry_point = image_base + pe.OPTIONAL_HEADER.AddressOfEntryPoint
-
-    # Not passing the fuzzing mode argument results in a dry run, without AFL's involvement.
-    if args.mode:
-        # We want AFL's forkserver to spawn new copies starting from the main module's entrypoint.
-        ql.hook_address(callback=start_afl, address=entry_point, user_data=args)
-
-    if args.taint:
-        taint.tracker.enable(ql, args.taint)
-
-    # Init SMM related protocols
-    smm.init(ql, args.mode == 'swsmi')
-
-    # Init firmware volumes from the provided ROM file.
-    if args.rom_file:
-        rom.install(ql, args.rom_file)
-
-    # Run custom initialization script.
-    if args.load_package:
-        mod = importlib.import_module(args.load_package)
-        if hasattr(mod, 'run'):
-            mod.run(ql)
-
-    # Enable sanitizers.
-    if args.sanitize:
-        for name in args.sanitize:
-            sanitizers.get(name)(ql).enable()
-
-    # okay, ready to roll.
-    try:
-        utils.enable_low_heap(ql)
-        ql.run(end=end, timeout=args.timeout)
-    except Exception as ex:
-        # Probable Unicorn memory error. Treat as crash.
-        verbose_abort(ql)
+    if args.command == 'run':
+        emulate(args)
+    elif args.command == 'fuzz':
+        fuzz(args)
+    # assert(False)
+    return
 
     os._exit(0)  # that's a looot faster than tidying up.
 
@@ -209,15 +80,18 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # Positional arguments
+    parser.add_argument("command", help="What should I do?", choices=['run', 'fuzz'])
     parser.add_argument("target", help="Path to the target binary to fuzz")
 
     # Optional arguments
+    parser.add_argument("-c", "--coverage-file", help="Path to code coverage file")
+    parser.add_argument("-f", "--fault", help="What to do when encountering a fault?", choices=['crash', 'stop', 'ignore', 'break'])
     parser.add_argument("-e", "--end", help="End address for emulation", type=auto_int)
     parser.add_argument("-t", "--timeout", help="Emulation timeout in ms", type=int, default=60*100000)
     parser.add_argument("-o", "--output", help="Trace execution for debugging purposes", choices=['trace', 'disasm', 'debug', 'off'], default='off')
     parser.add_argument("-s", "--sanitize", help="Enable memory sanitizer", choices=sanitizers.get_available_sanitizers().keys(), nargs='+')
     parser.add_argument("--taint", help="Track uninitialized memory (experimental!)", choices=taint.get_available_tainters().keys(), nargs='+')
-    parser.add_argument("-l", "--load-package", help="Load a package to further customize the environment")
+    parser.add_argument("-j", "--json-conf", help="Specify a JSON file to further customize the environment")
     parser.add_argument("-v", "--nvram-file", help="Pickled dictionary containing the NVRAM environment variables")
     parser.add_argument("-r", "--rom-file", help="Path to the UEFI ROM file")
     parser.add_argument("-x", "--extra-modules", help="Extra modules to load", nargs='+')
