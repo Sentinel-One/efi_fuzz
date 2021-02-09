@@ -26,6 +26,7 @@ def enable(ql, tainters):
         instruction = next(cs.disasm(buf, address))
 
         for tainter in ql.tainters.values():
+            # Ostensibly introduce new taint.
             tainter.instruction_hook(ql, instruction)
 
             # Sync Triton and Qiling.
