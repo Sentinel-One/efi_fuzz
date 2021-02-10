@@ -44,35 +44,49 @@ from EmulationManager import EmulationManager
 # for argparse
 auto_int = functools.partial(int, base=0)
 
-def emulate(args):
-    e = EmulationManager(args.target, args.extra_modules)
-    e.load_nvram(args.nvram_file)
-    e.enable_smm()
-    e.enable_taint(['uninitialized'])
-    e.enable_coverage(args.coverage_file)
-    e.apply(args.json_conf)
-    e.set_fault_handler(args.fault)
-    e.run()
+def create_emulator(cls, args):
+    emu = cls(args.target, args.extra_modules)
+    
+    # Load NVRAM environment from the provided Pickle.
+    if args.nvram_file:
+        emu.load_nvram(args.nvram_file)
+
+    # Load firmware volumes from the provided ROM file.
+    if args.rom_file:
+        emu.load_rom(args.rom_file)
+
+    # Set the fault handling policy.
+    if args.fault_handler:
+        emu.fault_handler = args.fault_handler
+
+    # Enable collection of code coverage.
+    if args.coverage_file:
+        emu.coverage_file = args.coverage_file
+
+    emu.enable_smm()
+
+    if args.taint:
+        emu.tainters = args.taint
+
+    if args.sanitize:
+        emu.sanitizers = args.sanitize
+
+    emu.apply(args.json_conf)
+    return emu
+
+def run(args):
+    emu = create_emulator(EmulationManager, args)
+    emu.run(args.end, args.timeout)
 
 def fuzz(args):
-    e = FuzzingManager(args.target, args.extra_modules)
-    e.load_nvram(args.nvram_file)
-    e.enable_smm()
-    e.enable_taint(['uninitialized'])
-    e.enable_coverage(args.coverage_file)
-    e.apply(args.json_conf)
-    e.set_fault_handler(args.fault)
-    e.run(args.end, args.timeout, args.varname, args.infile)
+    emu = create_emulator(FuzzingManager, args)
+    emu.run(args.end, args.timeout, varname=args.varname, infile=args.infile)
 
 def main(args):
-    enable_trace = args.output != 'off'
-
     if args.command == 'run':
-        emulate(args)
+        run(args)
     elif args.command == 'fuzz':
         fuzz(args)
-    # assert(False)
-    return
 
     os._exit(0)  # that's a looot faster than tidying up.
 
