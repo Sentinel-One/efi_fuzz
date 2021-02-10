@@ -1,5 +1,8 @@
+
+import binascii
+
 from .save_state_area import create_smm_save_state
-from qiling.os.uefi.ProcessorBind import STRUCT
+from qiling.os.uefi.ProcessorBind import STRUCT, PAGE_SIZE
 import ctypes
 from qiling.os.uefi.utils import ptr_write64
 
@@ -16,15 +19,16 @@ def trigger_next_smi_handler(ql):
     register_context.saveTo(ql, ql.os.smm.context_buffer)
     ql.reg.rdx = ql.os.smm.context_buffer
 
-    # IN OUT VOID    *CommBuffer      OPTIONAL
     comm_buffer = smi_params['CommunicationBuffer']
-    comm_buffer.saveTo(ql, ql.os.smm.comm_buffer)
-    ql.reg.r8 = ql.os.smm.comm_buffer
+    if comm_buffer:
+        # IN OUT VOID    *CommBuffer      OPTIONAL
+        comm_buffer.saveTo(ql, ql.os.smm.comm_buffer)
+        ql.reg.r8 = ql.os.smm.comm_buffer
 
-    # IN OUT UINTN   *CommBufferSize  OPTIONAL
-    size_ptr = ql.os.smm.comm_buffer + comm_buffer.sizeof()
-    ptr_write64(ql, size_ptr, comm_buffer.sizeof())
-    ql.reg.r9 = size_ptr
+        # IN OUT UINTN   *CommBufferSize  OPTIONAL
+        size_ptr = ql.os.smm.comm_buffer + comm_buffer.sizeof()
+        ptr_write64(ql, size_ptr, comm_buffer.sizeof())
+        ql.reg.r9 = size_ptr
 
     ql.reg.rip = smi_params["DispatchFunction"]
     ql.stack_push(ql.loader.end_of_execution_ptr)
@@ -37,9 +41,10 @@ def trigger_swsmi(ql, user_data=None):
 
     saved_regs = ql.reg.save()
 
-    # Apply fuzzed registers
-    for (reg, value) in ql.os.smm.swsmi_args.items():
-        ql.reg.write(reg, int.from_bytes(value, 'little'))
+    # Apply registers
+    if ql.os.smm.swsmi_args.get('registers'):
+        for (reg, value) in ql.os.smm.swsmi_args['registers'].items():
+            ql.reg.write(reg, int(value, 0))
         
     create_smm_save_state(ql)
 
