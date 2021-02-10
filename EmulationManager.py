@@ -10,8 +10,15 @@ import json
 import dummy_protocol
 import fault
 import os
-
+import binascii
+from qiling.os.uefi.ProcessorBind import STRUCT, PAGE_SIZE
+import capstone
+from unicorn.x86_const import *
+from conditional import conditional
 class EmulationManager:
+
+    DEFAULT_TAINTERS = ['uninitialized', 'smm']
+    DEFAULT_SANITIZERS = ['smm_callout'] # @TODO: add 'memory' sanitizer as default
 
     def __init__(self, target_module, extra_modules=None):
 
@@ -20,43 +27,64 @@ class EmulationManager:
 
         self.ql = Qiling(extra_modules + [target_module],
                          ".",                                        # rootfs
-                         output="trace")
+                         output="debug")
 
-        self.ql.os.fault_handler = fault.stop # default
         callbacks.set_after_module_execution_callback(self.ql)
+
+        self.coverage_file = None
+        
+        self.tainters = EmulationManager.DEFAULT_TAINTERS
+        self.sanitizers = EmulationManager.DEFAULT_SANITIZERS
+        self.fault_handler = 'exit' # By default we prefer to exit the emulation cleanly
 
     def load_nvram(self, nvram_file):
         # Load NVRAM environment.
-        if nvram_file:
-            with open(nvram_file, 'rb') as nvram:
-                self.env = pickle.load(nvram)
-        else:
-            self.env = {}
+        with open(nvram_file, 'rb') as nvram:
+            self.ql.env.update(pickle.load(nvram))
 
     def load_rom(self, rom_file):
         # Init firmware volumes from the provided ROM file.
-        if rom_file:
-            rom.install(self.ql, rom_file)
+        rom.install(self.ql, rom_file)
 
-    def enable_sanitizer(self, sanitizer_name):
+    def _enable_sanitizers(self):
         # Enable sanitizers.
-        sanitizers.get(sanitizer_name)(self.ql).enable()
+        self.ql.log.info(f'Enabling sanitizers {self.sanitizers}')
+        for sanitizer in self.sanitizers:
+            sanitizers.get(sanitizer)(self.ql).enable()
 
-    def enable_taint(self, taint_name):
-        taint.tracker.enable(self.ql, taint_name)
+    def _enable_tainters(self):
+        self.ql.log.info(f'Enabling tainters {self.tainters}')
+        taint.tracker.enable(self.ql, self.tainters)
 
     def enable_smm(self):
-        
         # Init SMM related protocols
         profile = os.path.join(os.path.dirname(__file__), 'smm', 'smm.ini')
         self.ql.profile.read(profile)
         smm.init(self.ql, True) #args.mode == 'swsmi')
 
-        self.enable_sanitizer('smm_callout')
-        self.enable_taint(['smm'])
+    @property
+    def coverage_file(self):
+        return self._coverage_file
 
-    def enable_coverage(self, coverage_file):
-        self.coverage_file = coverage_file
+    @coverage_file.setter
+    def coverage_file(self, cov):
+        self._coverage_file = cov
+
+    @property
+    def tainters(self):
+        return self._tainters
+
+    @tainters.setter
+    def tainters(self, value):
+        self._tainters = value
+
+    @property
+    def sanitizers(self):
+        return self._sanitizers
+
+    @sanitizers.setter
+    def sanitizers(self, value):
+        self._sanitizers = value
 
     def apply(self, json_conf):
         if not json_conf:
@@ -66,34 +94,57 @@ class EmulationManager:
             conf = json.load(f)
         
         # Install protocols
-        for proto in conf['protocols']:
-            descriptor = dummy_protocol.make_descriptor(proto['guid'])
-            self.ql.loader.dxe_context.install_protocol(descriptor, 1)
+        if conf.get('protocols'):
+            for proto in conf['protocols']:
+                descriptor = dummy_protocol.make_descriptor(proto['guid'])
+                self.ql.loader.dxe_context.install_protocol(descriptor, 1)
 
-        self.ql.os.smm.swsmi_args['registers'] = conf['registers']
+        if conf.get('registers'):
+            self.ql.os.smm.swsmi_args['registers'] = conf['registers']
+
+        if conf.get('memory'):
+            # Apply memory.
+            for (address, data) in conf['memory'].items():
+                address = int(address, 0)
+                data = binascii.unhexlify(data.replace(' ', ''))
+                if not self.ql.mem.is_mapped(address, len(data)):
+                    if address % PAGE_SIZE == 0:
+                        page = address
+                    else:
+                        page = self.ql.mem.align(address) - PAGE_SIZE
+                    size = self.ql.mem.align(len(data))
+                    self.ql.mem.map(page, size)
+                self.ql.mem.write(address, data)
             
-    def set_fault_handler(self, verb):
-        if verb == 'stop':
-            self.ql.os.fault_handler = fault.stop
-        elif verb == 'crash':
-            self.ql.os.fault_handler = fault.crash
-        elif verb == 'ignore':
+    @property
+    def fault_handler(self):
+        return self._fault_handler
+
+    @fault_handler.setter
+    def fault_handler(self, value):
+        self._fault_handler = value
+
+        if value == 'exit':
+            self.ql.os.fault_handler = fault.exit
+        elif value == 'abort':
+            self.ql.os.fault_handler = fault.abort
+        elif value == 'ignore':
             self.ql.os.fault_handler = fault.ignore
-        elif verb == 'break':
+        elif value == 'break':
             self.ql.os.fault_handler = fault._break
 
-    def run(self, end=None, timeout=0):
+    def run(self, end=None, timeout=0, **kwargs):
 
         if end:
             end = callbacks.set_end_of_execution_callback(self.ql, end)
 
-        # okay, ready to roll.
+        self._enable_sanitizers()
+        self._enable_tainters()
+
         try:
-            with cov_utils.collect_coverage(self.ql, 'drcov_exact', self.coverage_file):
+            # Don't collect coverage information unless explicitly requested by the user.
+            with conditional(self.coverage_file, cov_utils.collect_coverage(self.ql, 'drcov_exact', self.coverage_file)):
                 self.ql.run(end=end, timeout=timeout)
-        except fault.StopEmulation:
+        except fault.ExitEmulation:
+            # Exit cleanly.
             pass
-        except:
-            # Probable Unicorn memory error. Treat as crash.
-            # verbose_abort(ql)
-            raise
