@@ -85,7 +85,7 @@ if __name__ == "__main__":
 
     # Optional arguments
     parser.add_argument("-c", "--coverage-file", help="Path to code coverage file")
-    parser.add_argument("-f", "--fault", help="What to do when encountering a fault?", choices=['crash', 'stop', 'ignore', 'break'])
+    parser.add_argument("-f", "--fault-handler", help="What to do when encountering a fault?", choices=['crash', 'stop', 'ignore', 'break'])
     parser.add_argument("-e", "--end", help="End address for emulation", type=auto_int)
     parser.add_argument("-t", "--timeout", help="Emulation timeout in ms", type=int, default=60*100000)
     parser.add_argument("-o", "--output", help="Trace execution for debugging purposes", choices=['trace', 'disasm', 'debug', 'off'], default='off')
