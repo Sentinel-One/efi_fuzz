@@ -78,7 +78,7 @@ class FuzzingManager(EmulationManager):
         self.ql.log.warn('Coverage collection is incompatible with fuzzing')
         self._coverage_file = None
 
-    def run(self, end=None, timeout=0, **kwargs):
+    def fuzz(self, end=None, timeout=0, **kwargs):
         # The last loaded image is the main module we're interested in fuzzing
         target = self.ql.loader.images[-1].path
         pe = pefile.PE(target, fast_load=True)

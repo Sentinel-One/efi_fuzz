@@ -80,7 +80,7 @@ def run(args):
 
 def fuzz(args):
     emu = create_emulator(FuzzingManager, args)
-    emu.run(args.end, args.timeout, varname=args.varname, infile=args.infile)
+    emu.fuzz(args.end, args.timeout, varname=args.varname, infile=args.infile)
 
 def main(args):
     if args.command == 'run':
