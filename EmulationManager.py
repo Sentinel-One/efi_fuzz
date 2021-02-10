@@ -4,7 +4,6 @@ from qiling import Qiling
 import callbacks
 import sanitizers
 import smm
-import taint
 from qiling.extensions.coverage import utils as cov_utils
 import json
 import dummy_protocol
@@ -17,7 +16,6 @@ from unicorn.x86_const import *
 from conditional import conditional
 class EmulationManager:
 
-    DEFAULT_TAINTERS = ['uninitialized', 'smm']
     DEFAULT_SANITIZERS = ['smm_callout'] # @TODO: add 'memory' sanitizer as default
 
     def __init__(self, target_module, extra_modules=None):
@@ -33,7 +31,6 @@ class EmulationManager:
 
         self.coverage_file = None
         
-        self.tainters = EmulationManager.DEFAULT_TAINTERS
         self.sanitizers = EmulationManager.DEFAULT_SANITIZERS
         self.fault_handler = 'exit' # By default we prefer to exit the emulation cleanly
 
@@ -52,10 +49,6 @@ class EmulationManager:
         for sanitizer in self.sanitizers:
             sanitizers.get(sanitizer)(self.ql).enable()
 
-    def _enable_tainters(self):
-        self.ql.log.info(f'Enabling tainters {self.tainters}')
-        taint.tracker.enable(self.ql, self.tainters)
-
     def enable_smm(self):
         # Init SMM related protocols
         profile = os.path.join(os.path.dirname(__file__), 'smm', 'smm.ini')
@@ -69,22 +62,6 @@ class EmulationManager:
     @coverage_file.setter
     def coverage_file(self, cov):
         self._coverage_file = cov
-
-    @property
-    def tainters(self):
-        return self._tainters
-
-    @tainters.setter
-    def tainters(self, value):
-        self._tainters = value
-
-    @property
-    def sanitizers(self):
-        return self._sanitizers
-
-    @sanitizers.setter
-    def sanitizers(self, value):
-        self._sanitizers = value
 
     def apply(self, json_conf):
         if not json_conf:
@@ -139,7 +116,6 @@ class EmulationManager:
             end = callbacks.set_end_of_execution_callback(self.ql, end)
 
         self._enable_sanitizers()
-        self._enable_tainters()
 
         try:
             # Don't collect coverage information unless explicitly requested by the user.

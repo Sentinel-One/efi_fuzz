@@ -1,23 +1,24 @@
 import triton
 from abc import ABC, abstractmethod
+from sanitizers.base_sanitizer import base_sanitizer
+import taint.tracker
+class base_tainter(base_sanitizer):
 
-class base_tainter(ABC):
+    def __init__(self, ql):
+        super().__init__(ql)
 
-    def __init__(self):
         # Build and initialize a TritonContext.
         self.triton_ctx = triton.TritonContext()
         self.triton_ctx.setArchitecture(triton.ARCH.X86_64)
         self.triton_ctx.setMode(triton.MODE.ALIGNED_MEMORY, True)
         self.triton_ctx.setAstRepresentationMode(triton.AST_REPRESENTATION.PYTHON)
 
-    @property
-    @staticmethod
-    @abstractmethod
-    def NAME():
-        raise NotImplementedError
+    def enable(self):
+        if not hasattr(self.ql, 'tainters'):
+            self.ql.tainters = {}
+            taint.tracker.enable(self.ql)
 
-    def register(self, ql, name):
-        ql.tainters[name] = self
+        self.ql.tainters[self.NAME] = self
 
     def sync(self, ql):
         from unicorn.x86_const import UC_X86_REG_EFLAGS
