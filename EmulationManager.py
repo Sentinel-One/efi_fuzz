@@ -27,7 +27,7 @@ class EmulationManager:
                          ".",                                        # rootfs
                          output="debug")
 
-        callbacks.set_after_module_execution_callback(self.ql)
+        callbacks.init_callbacks(self.ql)
 
         self.coverage_file = None
         
