@@ -23,9 +23,6 @@ Then, to fuzz a UEFI module, perform the following steps:
    afl-fuzz -i afl_inputs/<var_name>/ -o afl_outputs -U -- python ./efi_fuzz.py <target> nvram.pickle <var_name> @@
 """
 
-# Make sure Qiling uses our patched Unicorn instead of it's own.
-from FuzzingManager import FuzzingManager
-
 import argparse
 import os
 import functools
@@ -37,9 +34,9 @@ except ImportError:
 
 from unicorn import *
 import sanitizers
-import taint
 import taint.tracker
 from EmulationManager import EmulationManager
+from FuzzingManager import FuzzingManager
 
 # for argparse
 auto_int = functools.partial(int, base=0)
@@ -63,13 +60,16 @@ def create_emulator(cls, args):
     if args.coverage_file:
         emu.coverage_file = args.coverage_file
 
+    # Initialize SMRAM and some SMM-related protocols.
     emu.enable_smm()
 
-    if args.taint:
-        emu.tainters = args.taint
-
+    # Enable sanitizers.
     if args.sanitize:
         emu.sanitizers = args.sanitize
+
+    # Override default output mode.
+    if args.output:
+        emu.ql.output = args.output
 
     emu.apply(args.json_conf)
     return emu
