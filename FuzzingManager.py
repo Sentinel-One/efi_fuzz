@@ -57,11 +57,28 @@ def start_afl(_ql: Qiling, user_data):
 
 class FuzzingManager(EmulationManager):
     
+    # Tainting significantly slows down the fuzzing process.
+    # Therefore, we won't enable them unless explicitly requested by the user.
+    DEFAULT_TAINTERS = []
+
+    DEFAULT_SANITIZERS = ['smm_callout'] # @TODO: maybe enable 'memory' sanitizer as well?
+
     def __init__(self, target_module, extra_modules=None):
         super().__init__(target_module, extra_modules)
-        self.ql.os.fault_handler = fault.crash # default
-        
-    def run(self, end=None, timeout=0, varname="", infile=""):
+
+        self.tainters = FuzzingManager.DEFAULT_TAINTERS
+        self.sanitizers = FuzzingManager.DEFAULT_SANITIZERS
+        self.fault_handler = 'abort' # By default we prefer to abort to notify AFL of potential crashes.
+
+    @EmulationManager.coverage_file.setter
+    def coverage_file(self, cov):
+        # The default behaviour of the fuzzer is to 'abort()' upon encoutering a fault.
+        # Since no termination handlers will be called, the coverage collector won't be
+        # able to dump the collected coverage entries to a file.
+        self.ql.log.warn('Coverage collection is incompatible with fuzzing')
+        self._coverage_file = None
+
+    def run(self, end=None, timeout=0, **kwargs):
         # The last loaded image is the main module we're interested in fuzzing
         target = self.ql.loader.images[-1].path
         pe = pefile.PE(target, fast_load=True)
@@ -69,6 +86,6 @@ class FuzzingManager(EmulationManager):
         entry_point = image_base + pe.OPTIONAL_HEADER.AddressOfEntryPoint
 
         # We want AFL's forkserver to spawn new copies starting from the main module's entrypoint.
-        self.ql.hook_address(callback=start_afl, address=entry_point, user_data=(varname, infile))
+        self.ql.hook_address(callback=start_afl, address=entry_point, user_data=(kwargs['varname'], kwargs['infile']))
 
         super().run(end, timeout)
