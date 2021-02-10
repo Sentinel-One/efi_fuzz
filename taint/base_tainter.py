@@ -17,9 +17,6 @@ class base_tainter(ABC):
         raise NotImplementedError
 
     def register(self, ql, name):
-        if not hasattr(ql, 'tainters'):
-            ql.tainters = {}
-
         ql.tainters[name] = self
 
     def sync(self, ql):
