@@ -17,7 +17,7 @@ from conditional import conditional
 
 class EmulationManager:
 
-    DEFAULT_SANITIZERS = ['smm_callout'] # @TODO: add 'memory' sanitizer as default
+    DEFAULT_SANITIZERS = ['smm_callout', 'smm', 'uninitialized'] # @TODO: add 'memory' sanitizer as default
 
     def __init__(self, target_module, extra_modules=None):
 
