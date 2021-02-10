@@ -4,7 +4,7 @@ def after_module_execution_callback(ql, number_of_modules_left):
     for callback in ql.os.after_module_execution_callbacks:
         callback(ql, number_of_modules_left)
 
-def set_after_module_execution_callback(ql):
+def init_callbacks(ql):
     ql.os.after_module_execution_callbacks = []
     ql.os.notify_after_module_execution = after_module_execution_callback
 

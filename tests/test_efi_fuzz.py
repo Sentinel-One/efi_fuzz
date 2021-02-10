@@ -105,7 +105,7 @@ def test_smi_dispatching():
     ql.env.update({'TestName': TEST_NAME})
 
     # Init SMM
-    callbacks.set_after_module_execution_callback(ql)
+    callbacks.init_callbacks(ql)
     smm.init(ql, in_smm=True)
 
     def smi_intercept(ql):
@@ -151,7 +151,7 @@ def test_smm_save_state():
     ql.env.update({'TestName': TEST_NAME})
 
     # Init SMM
-    callbacks.set_after_module_execution_callback(ql)
+    callbacks.init_callbacks(ql)
     smm.init(ql, in_smm=True)
 
     def validate_smm_read_save_state(ql, address, params):
