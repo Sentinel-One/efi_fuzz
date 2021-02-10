@@ -6,10 +6,10 @@ unicornafl.monkeypatch()
 from unicorn import *
 
 import pefile
-from EmulationManager import EmulationManager
+from core.EmulationManager import EmulationManager
 from qiling import Qiling
 import os
-import fault
+import core.fault
 
 def start_afl(_ql: Qiling, user_data):
     """

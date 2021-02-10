@@ -1,19 +1,20 @@
 import pickle
 import rom
 from qiling import Qiling
-import callbacks
+from . import callbacks
 import sanitizers
 import smm
 from qiling.extensions.coverage import utils as cov_utils
 import json
 import dummy_protocol
-import fault
+from . import fault
 import os
 import binascii
 from qiling.os.uefi.ProcessorBind import STRUCT, PAGE_SIZE
 import capstone
 from unicorn.x86_const import *
 from conditional import conditional
+
 class EmulationManager:
 
     DEFAULT_SANITIZERS = ['smm_callout'] # @TODO: add 'memory' sanitizer as default
@@ -120,4 +121,7 @@ class EmulationManager:
         try:
             # Don't collect coverage information unless explicitly requested by the user.
             with conditional(self.coverage_file, cov_utils.collect_coverage(self.ql, 'drcov_exact', self.coverage_file)):
-                sel
+                self.ql.run(end=end, timeout=timeout)
+        except fault.ExitEmulation:
+            # Exit cleanly.
+            pass

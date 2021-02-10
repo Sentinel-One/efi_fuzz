@@ -35,8 +35,8 @@ except ImportError:
 from unicorn import *
 import sanitizers
 import taint.tracker
-from EmulationManager import EmulationManager
-from FuzzingManager import FuzzingManager
+from core.EmulationManager import EmulationManager
+from core.FuzzingManager import FuzzingManager
 
 # for argparse
 auto_int = functools.partial(int, base=0)
