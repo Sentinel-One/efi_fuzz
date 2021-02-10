@@ -59,14 +59,11 @@ class FuzzingManager(EmulationManager):
     
     # Tainting significantly slows down the fuzzing process.
     # Therefore, we won't enable them unless explicitly requested by the user.
-    DEFAULT_TAINTERS = []
-
     DEFAULT_SANITIZERS = ['smm_callout'] # @TODO: maybe enable 'memory' sanitizer as well?
 
     def __init__(self, target_module, extra_modules=None):
         super().__init__(target_module, extra_modules)
 
-        self.tainters = FuzzingManager.DEFAULT_TAINTERS
         self.sanitizers = FuzzingManager.DEFAULT_SANITIZERS
         self.fault_handler = 'abort' # By default we prefer to abort to notify AFL of potential crashes.
 
