@@ -12,13 +12,10 @@ class smm_memory_tainter(base_tainter):
 
     NAME = 'smm'
 
-    def __init__(self):
-        super().__init__()
+    def enable(self):
+        super().enable()
 
-    def register(self, ql):
-        super().register(ql, self.NAME)
-
-        ql.set_api("SmmReadSaveState", ReadSaveState_propagate_taint, QL_INTERCEPT.EXIT)
+        self.ql.set_api("SmmReadSaveState", ReadSaveState_propagate_taint, QL_INTERCEPT.EXIT)
 
     @staticmethod
     def compute_effective_address(ql, operand):

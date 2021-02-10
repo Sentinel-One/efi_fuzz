@@ -65,17 +65,14 @@ class uninitialized_memory_tainter(base_tainter):
 
     NAME = 'uninitialized'
 
-    def __init__(self):
-        super().__init__()
+    def enable(self):
+        super().enable()
 
-    def register(self, ql):
-        super().register(ql, self.NAME)
-
-        ql.set_api("SetMem", SetMem_propagate_taint, QL_INTERCEPT.EXIT)
-        ql.set_api("CopyMem", CopyMem_propagate_taint, QL_INTERCEPT.EXIT)
-        ql.set_api("SetVariable", SetVariable_propagate_taint, QL_INTERCEPT.EXIT)
-        ql.set_api("GetVariable", GetVariable_propagate_taint, QL_INTERCEPT.EXIT)
-        ql.set_api("AllocatePool", AllocatePool_propagate_taint, QL_INTERCEPT.EXIT)
+        self.ql.set_api("SetMem", SetMem_propagate_taint, QL_INTERCEPT.EXIT)
+        self.ql.set_api("CopyMem", CopyMem_propagate_taint, QL_INTERCEPT.EXIT)
+        self.ql.set_api("SetVariable", SetVariable_propagate_taint, QL_INTERCEPT.EXIT)
+        self.ql.set_api("GetVariable", GetVariable_propagate_taint, QL_INTERCEPT.EXIT)
+        self.ql.set_api("AllocatePool", AllocatePool_propagate_taint, QL_INTERCEPT.EXIT)
 
     @staticmethod
     def is_stack_pointer_decrement(inst):

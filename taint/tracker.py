@@ -2,25 +2,15 @@
 # Keeps track of uninitialized memory via memory tainting.
 #
 
-from .uninitialized_memory_tainter import uninitialized_memory_tainter
-from .smm_memory_tainter import smm_memory_tainter
 import capstone
 from capstone.x86_const import *
 import triton
-from . import get_available_tainters
 
 cs = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_64)
 cs.detail = True
 
-def enable(ql, tainters):
+def enable(ql):
     
-    if not hasattr(ql, 'tainters'):
-        ql.tainters = {}
-
-    for name in tainters:
-        tainter = get_available_tainters()[name]()
-        tainter.register(ql)
-
     def hook_opcode(ql, address, size):
         global cs
 
