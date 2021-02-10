@@ -14,6 +14,9 @@ cs.detail = True
 
 def enable(ql, tainters):
     
+    if not hasattr(ql, 'tainters'):
+        ql.tainters = {}
+
     for name in tainters:
         tainter = get_available_tainters()[name]()
         tainter.register(ql)
