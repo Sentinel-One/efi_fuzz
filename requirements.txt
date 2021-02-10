@@ -4,3 +4,4 @@ uefi_firmware
 monkeyhex
 pytest
 mockito
+conditional
