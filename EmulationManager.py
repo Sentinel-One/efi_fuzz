@@ -25,7 +25,7 @@ class EmulationManager:
 
         self.ql = Qiling(extra_modules + [target_module],
                          ".",                                        # rootfs
-                         output="debug")
+                         output="trace")
 
         callbacks.init_callbacks(self.ql)
 
