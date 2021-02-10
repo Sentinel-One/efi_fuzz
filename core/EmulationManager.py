@@ -51,7 +51,7 @@ class EmulationManager:
             sanitizers.get(sanitizer)(self.ql).enable()
 
     def enable_smm(self):
-        profile = os.path.join(os.path.dirname(__file__), 'smm', 'smm.ini')
+        profile = os.path.join(os.path.dirname(__file__), os.path.pardir, 'smm', 'smm.ini')
         self.ql.profile.read(profile)
         # Init SMM related protocols.
         smm.init(self.ql, True)
