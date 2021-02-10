@@ -50,10 +50,10 @@ class EmulationManager:
             sanitizers.get(sanitizer)(self.ql).enable()
 
     def enable_smm(self):
-        # Init SMM related protocols
         profile = os.path.join(os.path.dirname(__file__), 'smm', 'smm.ini')
         self.ql.profile.read(profile)
-        smm.init(self.ql, True) #args.mode == 'swsmi')
+        # Init SMM related protocols.
+        smm.init(self.ql, True)
 
     @property
     def coverage_file(self):
@@ -120,7 +120,4 @@ class EmulationManager:
         try:
             # Don't collect coverage information unless explicitly requested by the user.
             with conditional(self.coverage_file, cov_utils.collect_coverage(self.ql, 'drcov_exact', self.coverage_file)):
-                self.ql.run(end=end, timeout=timeout)
-        except fault.ExitEmulation:
-            # Exit cleanly.
-            pass
+                sel
