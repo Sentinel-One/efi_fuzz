@@ -58,7 +58,7 @@ class smm_callout_sanitizer(base_sanitizer):
 
     @staticmethod
     def _after_module_execution_callback(ql, number_of_modules_left):
-        if number_of_modules_left == 0:
+        if number_of_modules_left == 0 and ql.os.smm_ready_to_lock_installed:
             smm_callout_sanitizer._activate_smm_sanitizer(ql)
 
     def enable(self):
