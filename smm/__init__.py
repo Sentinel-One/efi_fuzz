@@ -1,5 +1,6 @@
 from . import protocols
 from qiling.os.uefi.utils import write_int64
+from qiling.os.uefi.ProcessorBind import STRUCT, UINTN
 from qiling.os.memory import QlMemoryHeap
 from .swsmi import trigger_swsmi
 
@@ -83,9 +84,22 @@ def init(ql, in_smm=False):
 
     # Replace 'InSmm' to correctly report whether or not we're executing an SMM module.
     ql.set_api("InSmm", hook_InSmm)
-
+    ql.os.smm_ready_to_lock_installed = False
     def after_module_execution_callback(ql, number_of_modules_left):
         if number_of_modules_left == 0:
+            if not ql.os.smm_ready_to_lock_installed:
+                ql.os.smm_ready_to_lock_installed = True
+                class SMM_READY_TO_LOCK_PROTOCOL(STRUCT):
+                    _fields_ = [
+                        ('Header', UINTN),
+                    ]
+                descriptor = {
+                    "guid" : "47b7fa8c-f4bd-4af6-8200-333086f0d2c8",
+                    "struct" : SMM_READY_TO_LOCK_PROTOCOL,
+                    "fields" : (('Header', None),)
+                }
+                ql.loader.smm_context.install_protocol(descriptor, 1)
+                return True
             return trigger_swsmi(ql)
         return False
 
