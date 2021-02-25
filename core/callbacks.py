@@ -1,8 +1,11 @@
 import capstone
 
 def after_module_execution_callback(ql, number_of_modules_left):
+    ret = False
     for callback in ql.os.after_module_execution_callbacks:
-        callback(ql, number_of_modules_left)
+        if callback(ql, number_of_modules_left):
+            ret = True
+    return ret
 
 def init_callbacks(ql):
     ql.os.after_module_execution_callbacks = []

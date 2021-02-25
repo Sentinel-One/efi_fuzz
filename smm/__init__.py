@@ -98,8 +98,7 @@ def init(ql, in_smm=False):
                     "struct" : SMM_READY_TO_LOCK_PROTOCOL,
                     "fields" : (('Header', None),)
                 }
-                ql.loader.smm_context.install_protocol(descriptor, 1)
-                return True
+                return ql.loader.smm_context.install_protocol(descriptor, 1)
             return trigger_swsmi(ql)
         return False
 
