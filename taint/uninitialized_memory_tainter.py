@@ -14,7 +14,8 @@ def SetMem_propagate_taint(ql, address, params):
     begin = params['Buffer']
     end = begin + params['Size']
     # r8b corresponds to the 'UINT8 Value' parameter.
-    taint = ql.tainters['uninitialized'].triton_ctx.isRegisterTainted(ql.tainters['uninitialized'].triton_ctx.registers.r8b)
+    Value = ql.tainters['uninitialized'].triton_ctx.registers.r8b
+    taint = ql.tainters['uninitialized'].triton_ctx.isRegisterTainted(Value)
     ql.tainters['uninitialized'].set_taint_range(begin, end, taint)
 
 def CopyMem_propagate_taint(ql, address, params):
@@ -26,8 +27,7 @@ def CopyMem_propagate_taint(ql, address, params):
 
 def AllocatePool_propagate_taint(ql, address, params):
     """
-    Taint propagation for Alloca
-    tePool().
+    Taint propagation for AllocatePool().
     We know that all pool memory is initially uninitialized, so we taint it.
     """
     begin = ptr_read64(ql, params['Buffer'])
