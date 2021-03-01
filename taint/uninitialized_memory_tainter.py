@@ -61,6 +61,19 @@ def SetVariable_propagate_taint(ql, address, params):
         ql.os.emu_error()
         ql.os.fault_handler()
 
+def SmmAllocatePages_propagate_taint(ql, address, params):
+    """
+    Taint propagation of SmmAllocatePages(). If the data that was written to NVRAM contains some tainted
+    bytes, that means a potential infoleak has occurred and we can abort the process and report that.
+    """
+    # r8 corresponds to the 'UINTN NumberOfPages' parameter.
+    NumberOfPages = ql.tainters['uninitialized'].triton_ctx.registers.r8
+    if ql.tainters['uninitialized'].triton_ctx.isRegisterTainted(NumberOfPages):
+        # Uninitialized value is used.
+        ql.log.warn(f"An uninitialized value (0x{ql.reg.r8:x}) is used as argument NumberOfPages of SmmAllocatePages()")
+
+    # @TODO: Are the newly allocated pages zero-initialized or not?
+
 class uninitialized_memory_tainter(base_tainter):
 
     NAME = 'uninitialized'
@@ -73,6 +86,7 @@ class uninitialized_memory_tainter(base_tainter):
         self.ql.set_api("SetVariable", SetVariable_propagate_taint, QL_INTERCEPT.EXIT)
         self.ql.set_api("GetVariable", GetVariable_propagate_taint, QL_INTERCEPT.EXIT)
         self.ql.set_api("AllocatePool", AllocatePool_propagate_taint, QL_INTERCEPT.EXIT)
+        self.ql.set_api("SmmAllocatePages", SmmAllocatePages_propagate_taint, QL_INTERCEPT.EXIT)
 
     @staticmethod
     def is_stack_pointer_decrement(inst):
