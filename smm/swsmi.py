@@ -46,17 +46,21 @@ def trigger_next_smi_handler(ql):
     if comm_buffer:
         # IN OUT VOID    *CommBuffer      OPTIONAL
         if type(comm_buffer) == bytes:
+            if len(comm_buffer) > ql.os.smm.comm_buffer_size:
+                comm_buffer = comm_buffer[:ql.os.smm.comm_buffer_size]
             ql.mem.write(ql.os.smm.comm_buffer, comm_buffer)
             comm_buffer_size = len(comm_buffer)
         else:
+            if comm_buffer.sizeof() > ql.os.smm.comm_buffer_size:
+                ql.log.error("Structure too big, can't write command buffer")
+                return False
             comm_buffer.saveTo(ql, ql.os.smm.comm_buffer)
             comm_buffer_size = comm_buffer.sizeof()
         ql.reg.r8 = ql.os.smm.comm_buffer
 
         # IN OUT UINTN   *CommBufferSize  OPTIONAL
-        size_ptr = ql.os.smm.comm_buffer + comm_buffer_size
-        ptr_write64(ql, size_ptr, comm_buffer_size)
-        ql.reg.r9 = size_ptr
+        ptr_write64(ql, ql.os.smm.comm_buffer_size_ptr, comm_buffer_size)
+        ql.reg.r9 = ql.os.smm.comm_buffer_size_ptr
 
     ql.reg.rip = smi_params["DispatchFunction"]
     ql.stack_push(ql.loader.end_of_execution_ptr)
