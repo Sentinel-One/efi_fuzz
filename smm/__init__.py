@@ -52,6 +52,8 @@ class SmmState(object):
         # be conveyed from a non-MM environment into an MM environment.
         self.comm_buffer = self.heap_alloc(self.PAGE_SIZE)
 
+        self.comm_buffer_fuzz_data = 0
+
     def heap_alloc(self, size):
         # Prefer allocating from TSEG.
         p = self.tseg.heap_alloc(size)
@@ -98,7 +100,7 @@ def init(ql, in_smm=False):
                     "struct" : SMM_READY_TO_LOCK_PROTOCOL,
                     "fields" : (('Header', None),)
                 }
-                return ql.loader.smm_context.install_protocol(descriptor, 1)
+                return ql.loader.smm_context.install_protocol(descriptor, 1) or trigger_swsmi(ql)
             return trigger_swsmi(ql)
         return False
 

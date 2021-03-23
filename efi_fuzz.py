@@ -36,7 +36,7 @@ from unicorn import *
 import sanitizers
 import taint.tracker
 from core.EmulationManager import EmulationManager
-from core.FuzzingManager import FuzzingManager
+from core.FuzzingManager import *
 
 # for argparse
 auto_int = functools.partial(int, base=0)
@@ -79,8 +79,13 @@ def run(args):
     emu.run(args.end, args.timeout)
 
 def fuzz(args):
-    emu = create_emulator(FuzzingManager, args)
-    emu.fuzz(args.end, args.timeout, varname=args.varname, infile=args.infile)
+    if args.mode == 'nvram':
+        emu = create_emulator(NvRamFuzzingManager, args)
+    elif args.mode == 'smmc':
+        emu = create_emulator(SmmcFuzzingManager, args)
+    else:
+        return
+    emu.fuzz(**vars(args))
 
 def main(args):
     if args.command == 'run':
@@ -115,5 +120,9 @@ if __name__ == "__main__":
     nvram_subparser = subparsers.add_parser("nvram", help="Fuzz contents of NVRAM variables")
     nvram_subparser.add_argument("varname", help="Name of the NVRAM variable to mutate")
     nvram_subparser.add_argument("infile", help="Mutated input buffer. Set to @@ when running under afl-fuzz")
+
+    # SMMC sub-command
+    smmc_subparser = subparsers.add_parser("smmc", help="Fuzz CommunicationBuffer passed to SMIs")
+    smmc_subparser.add_argument("infile", help="Mutated input buffer. Set to @@ when running under afl-fuzz")
     
     main(parser.parse_args())

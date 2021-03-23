@@ -68,33 +68,19 @@ def hook_SMM_SW_DISPATCH2_Register(ql, address, params):
     # Currently we don't support it and always pass a zero value for it.
     smm_sw_context.DataPort = 0
 
-    # Allocate a unique handle for this SMI.
-    dh = ql.os.heap.alloc(1)
-    ptr_write64(ql, params["DispatchHandle"], dh)
-    
-    smi_params = {
-        "DispatchFunction": params["DispatchFunction"],
-        "RegisterContext": smm_sw_register_context,
-        "CommunicationBuffer": smm_sw_context,
-    }
-
-    # Let's save the dispatch params, so they can be triggered if needed.
-    ql.os.smm.swsmi_handlers[dh] = smi_params
-    return EFI_SUCCESS
+    dh = register_sw_smi(ql, params["DispatchFunction"], smm_sw_context)
+    if dh:
+        ptr_write64(ql, params["DispatchHandle"], dh)
+        return EFI_SUCCESS
+    else:
+        return EFI_OUT_OF_RESOURCES
     
 @dxeapi(params={
     "This": POINTER, #POINTER_T(struct__EFI_SMM_SW_DISPATCH2_PROTOCOL)
     "DispatchHandle": POINTER, #POINTER_T(None)
 })
 def hook_SMM_SW_DISPATCH2_UnRegister(ql, address, params):
-    dh = params['DispatchHandle']
-    try:
-        del ql.os.smm.swsmi_handlers[dh]
-        ql.os.heap.free(dh)
-    except:
-        return EFI_INVALID_PARAMETER
-    else:
-        return EFI_SUCCESS
+    return unregister_sw_smi(ql, params["DispatchHandle"])
 
 def install_EFI_SMM_SW_DISPATCH2_PROTOCOL(ql):
     descriptor = {

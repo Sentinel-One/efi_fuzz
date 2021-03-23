@@ -11,18 +11,16 @@ from qiling import Qiling
 import os
 import core.fault
 
-def start_afl(_ql: Qiling, user_data):
+def start_afl(_ql: Qiling, fuzzing_manager):
     """
     Callback from inside
     """
 
-    (varname, infile) = user_data
-
-    def place_input_callback_nvram(uc, _input, _, data):
+    def place_input_callback(uc, _input, _, data):
         """
         Injects the mutated variable to the emulated NVRAM environment.
         """
-        _ql.env[varname] = _input
+        fuzzing_manager.place_input_callback(_input)
 
     def validate_crash(uc, err, _input, persistent_round, user_data):
         """
@@ -37,14 +35,10 @@ def start_afl(_ql: Qiling, user_data):
         crash = (_ql.internal_exception is not None) or (err.errno != UC_ERR_OK)
         return crash
 
-    # Choose the function to inject the mutated input to the emulation environment,
-    # based on the fuzzing mode.
-    place_input_callback = place_input_callback_nvram
-
     # We start our AFL forkserver or run once if AFL is not available.
     # This will only return after the fuzzing stopped.
     try:
-        if not _ql.uc.afl_fuzz(input_file=infile,
+        if not _ql.uc.afl_fuzz(input_file=fuzzing_manager.infile,
                                place_input_callback=place_input_callback,
                                exits=[_ql.os.exit_point],
                                always_validate=True,
@@ -81,8 +75,19 @@ class FuzzingManager(EmulationManager):
         pe = pefile.PE(target, fast_load=True)
         image_base = self.ql.loader.images[-1].base
         entry_point = image_base + pe.OPTIONAL_HEADER.AddressOfEntryPoint
-
+        self.infile = kwargs['infile']
         # We want AFL's forkserver to spawn new copies starting from the main module's entrypoint.
-        self.ql.hook_address(callback=start_afl, address=entry_point, user_data=(kwargs['varname'], kwargs['infile']))
-
+        self.ql.hook_address(callback=start_afl, address=entry_point, user_data=self)
         super().run(end, timeout)
+
+class NvRamFuzzingManager(FuzzingManager):
+    def fuzz(self, end=None, timeout=0, **kwargs):
+        super().fuzz(self, end, timeout, **kwargs)
+        self.var_name = kwargs['varname']
+    
+    def place_input_callback(self, input):
+        self.ql.env[self.varname] = input
+
+class SmmcFuzzingManager(FuzzingManager):
+    def place_input_callback(self, input):
+        self.ql.os.smm.comm_buffer_fuzz_data = input
