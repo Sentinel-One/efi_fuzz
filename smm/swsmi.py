@@ -50,6 +50,8 @@ def trigger_next_smi_handler(ql):
                 comm_buffer = comm_buffer[:ql.os.smm.comm_buffer_size]
             ql.mem.write(ql.os.smm.comm_buffer, comm_buffer)
             comm_buffer_size = len(comm_buffer)
+            if hasattr(ql, 'tainters') and 'smm' in ql.tainters:
+                ql.tainters['smm'].set_taint_range(ql.os.smm.comm_buffer, ql.os.smm.comm_buffer + comm_buffer_size, True)
         else:
             if comm_buffer.sizeof() > ql.os.smm.comm_buffer_size:
                 ql.log.error("Structure too big, can't write command buffer")
