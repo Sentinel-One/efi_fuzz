@@ -6,6 +6,28 @@ from qiling.os.uefi.ProcessorBind import STRUCT, PAGE_SIZE
 import ctypes
 from qiling.os.uefi.utils import ptr_write64
 
+def register_sw_smi(ql, DispatchFunction, RegisterContext, CommunicationBuffer):
+    # Allocate a unique handle for this SMI.
+    dh = ql.os.heap.alloc(1)
+    
+    smi_params = {
+        "DispatchFunction": DispatchFunction,
+        "RegisterContext": RegisterContext,
+        "CommunicationBuffer": CommunicationBuffer,
+    }
+
+    # Let's save the dispatch params, so they can be triggered if needed.
+    ql.os.smm.swsmi_handlers[dh] = smi_params
+    return dh
+
+def unregister_sw_smi(ql, DispatchHandle):
+    try:
+        del ql.os.smm.swsmi_handlers[DispatchHandle]
+        ql.os.heap.free(DispatchHandle)
+    except:
+        return EFI_INVALID_PARAMETER
+    else:
+        return EFI_SUCCESS
 
 def trigger_next_smi_handler(ql):
     (dispatch_handle, smi_params) = ql.os.smm.swsmi_handlers.popitem()
@@ -16,19 +38,31 @@ def trigger_next_smi_handler(ql):
 
     # IN CONST VOID  *Context         OPTIONAL
     register_context = smi_params['RegisterContext']
-    register_context.saveTo(ql, ql.os.smm.context_buffer)
+    if register_context:
+        register_context.saveTo(ql, ql.os.smm.context_buffer)
     ql.reg.rdx = ql.os.smm.context_buffer
 
-    comm_buffer = smi_params['CommunicationBuffer']
+    comm_buffer = smi_params['CommunicationBuffer'] or ql.os.smm.comm_buffer_fuzz_data
     if comm_buffer:
         # IN OUT VOID    *CommBuffer      OPTIONAL
-        comm_buffer.saveTo(ql, ql.os.smm.comm_buffer)
+        if type(comm_buffer) == bytes:
+            if len(comm_buffer) > ql.os.smm.comm_buffer_size:
+                comm_buffer = comm_buffer[:ql.os.smm.comm_buffer_size]
+            ql.mem.write(ql.os.smm.comm_buffer, comm_buffer)
+            comm_buffer_size = len(comm_buffer)
+            if hasattr(ql, 'tainters') and 'smm' in ql.tainters:
+                ql.tainters['smm'].set_taint_range(ql.os.smm.comm_buffer, ql.os.smm.comm_buffer + comm_buffer_size, True)
+        else:
+            if comm_buffer.sizeof() > ql.os.smm.comm_buffer_size:
+                ql.log.error("Structure too big, can't write command buffer")
+                return False
+            comm_buffer.saveTo(ql, ql.os.smm.comm_buffer)
+            comm_buffer_size = comm_buffer.sizeof()
         ql.reg.r8 = ql.os.smm.comm_buffer
 
         # IN OUT UINTN   *CommBufferSize  OPTIONAL
-        size_ptr = ql.os.smm.comm_buffer + comm_buffer.sizeof()
-        ptr_write64(ql, size_ptr, comm_buffer.sizeof())
-        ql.reg.r9 = size_ptr
+        ptr_write64(ql, ql.os.smm.comm_buffer_size_ptr, comm_buffer_size)
+        ql.reg.r9 = ql.os.smm.comm_buffer_size_ptr
 
     ql.reg.rip = smi_params["DispatchFunction"]
     ql.stack_push(ql.loader.end_of_execution_ptr)

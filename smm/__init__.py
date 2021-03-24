@@ -34,6 +34,7 @@ class SmmSegment:
 class SmmState(object):
 
     PAGE_SIZE = 0x1000
+    UINTN_SIZE = 8
 
     def __init__(self, ql):
         self.swsmi_handlers = {}
@@ -51,6 +52,11 @@ class SmmState(object):
         # A pointer to a collection of data in memory that will
         # be conveyed from a non-MM environment into an MM environment.
         self.comm_buffer = self.heap_alloc(self.PAGE_SIZE)
+        self.comm_buffer_size_ptr = self.comm_buffer - self.UINTN_SIZE
+        self.comm_buffer_size = self.PAGE_SIZE - self.UINTN_SIZE
+
+
+        self.comm_buffer_fuzz_data = 0
 
     def heap_alloc(self, size):
         # Prefer allocating from TSEG.
@@ -98,7 +104,7 @@ def init(ql, in_smm=False):
                     "struct" : SMM_READY_TO_LOCK_PROTOCOL,
                     "fields" : (('Header', None),)
                 }
-                return ql.loader.smm_context.install_protocol(descriptor, 1)
+                return ql.loader.smm_context.install_protocol(descriptor, 1) or trigger_swsmi(ql)
             return trigger_swsmi(ql)
         return False
 
